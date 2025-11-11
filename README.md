@@ -25,18 +25,53 @@ See [Vite Configuration Reference](https://vite.dev/config/).
 
 ## Project Setup
 
+### 1. Instalar dependencias
+
 ```sh
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### 2. Configurar variables de entorno
+
+Copia el archivo `.env.example` a `.env` y completa con tus credenciales de Firebase:
+
+```sh
+cp .env.example .env
+```
+
+Luego edita el archivo `.env` con tus credenciales de Firebase Console.
+
+### 3. Compile and Hot-Reload for Development
 
 ```sh
 npm run dev
 ```
 
-### Type-Check, Compile and Minify for Production
+### 4. Type-Check, Compile and Minify for Production
 
 ```sh
 npm run build
 ```
+
+## Configuración de Firebase
+
+Este proyecto usa Firebase para autenticación y base de datos. Para configurar tu propio proyecto:
+
+1. Ve a [Firebase Console](https://console.firebase.google.com/)
+2. Crea un nuevo proyecto o selecciona uno existente
+3. Ve a la configuración del proyecto y copia las credenciales
+4. Pega las credenciales en tu archivo `.env`
+
+**⚠️ IMPORTANTE:** Nunca subas el archivo `.env` al repositorio. Este archivo está ignorado en `.gitignore` para proteger tus credenciales.
+
+## Stack Tecnológico
+
+- **Vue 3** - Framework progresivo de JavaScript
+- **TypeScript** - Tipado estático
+- **Vite** - Build tool y dev server
+- **Vue Router** - Enrutamiento
+- **Pinia** - State management
+- **Firebase** - Backend as a Service
+- **VueFire** - Integración de Firebase con Vue
+- **Tailwind CSS** - Framework de utilidades CSS
+- **daisyUI** - Componentes UI para Tailwind
