@@ -305,9 +305,17 @@ onMounted(() => {
     <div class="container mx-auto p-6">
       <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold">Bienvenido, Admin</h1>
-        <button class="btn btn-primary" @click="showCreateEmployee = true">
-          + Crear Usuario
-        </button>
+        <div class="flex gap-2">
+          <button class="btn btn-secondary" @click="router.push('/games')">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+            </svg>
+            Gestión de Juegos
+          </button>
+          <button class="btn btn-primary" @click="showCreateEmployee = true">
+            + Crear Usuario
+          </button>
+        </div>
       </div>
 
       <!-- Mensaje de éxito de creación -->
