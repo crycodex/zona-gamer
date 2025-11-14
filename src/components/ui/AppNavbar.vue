@@ -5,7 +5,7 @@ import { useAuth } from '@/composables/useAuth'
 import { useCartStore } from '@/stores/cart'
 import { Search, ShoppingCart, User, Send, Gamepad2 } from 'lucide-vue-next'
 import type { GamePlatform } from '@/types/game'
-import logo from '../../../public/Images/logo/logo.png'
+import logo from '/Images/logo/logo.png'
 
 const router = useRouter()
 const { currentUser, signOut } = useAuth()
