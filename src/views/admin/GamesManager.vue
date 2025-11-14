@@ -8,7 +8,7 @@ import type { GameSummary, GameEmailAccount, GamePlatform, AccountOwner } from '
 
 const router = useRouter()
 const { signOut } = useAuth()
-const { currentUserData, isAdmin, hasEmployeeAccess } = useRoles()
+const { currentUserData, isAdmin, hasEmployeeAccess, loadUserData } = useRoles()
 const {
   games,
   isLoadingGames,
@@ -489,7 +489,8 @@ const volverAlPanel = (): void => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await loadUserData()
   cargarJuegosPorPlataforma()
 })
 </script>
@@ -553,7 +554,7 @@ onMounted(() => {
           />
         </div>
 
-        <div v-if="hasEmployeeAccess" class="flex gap-2">
+        <div v-if="isAdmin" class="flex gap-2">
           <button 
             v-if="vistaActual === 'juegos'" 
             class="btn btn-primary"
@@ -649,7 +650,7 @@ onMounted(() => {
                         Ver Correos
                       </button>
                       <button
-                        v-if="hasEmployeeAccess"
+                        v-if="isAdmin"
                         class="btn btn-sm btn-warning"
                         @click="iniciarEdicionFoto(juego)"
                       >
@@ -658,7 +659,7 @@ onMounted(() => {
                         </svg>
                       </button>
                       <button
-                        v-if="hasEmployeeAccess"
+                        v-if="isAdmin"
                         class="btn btn-sm btn-error"
                         @click="iniciarEliminacionJuego(juego)"
                       >
@@ -731,7 +732,7 @@ onMounted(() => {
                         </svg>
                       </button>
                       <button
-                        v-if="hasEmployeeAccess"
+                        v-if="isAdmin"
                         class="btn btn-sm btn-primary"
                         @click="iniciarEdicion(email)"
                       >
@@ -740,7 +741,7 @@ onMounted(() => {
                         </svg>
                       </button>
                       <button
-                        v-if="hasEmployeeAccess"
+                        v-if="isAdmin"
                         class="btn btn-sm btn-error"
                         @click="iniciarEliminacionCorreo(email)"
                       >
