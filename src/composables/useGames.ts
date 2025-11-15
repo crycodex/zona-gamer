@@ -62,12 +62,15 @@ export function useGames() {
 
       // Usar el costo del documento principal si existe, sino del primer correo
       const costoJuego = juegoDocData.costo !== undefined ? juegoDocData.costo : (juegoData?.costo || 0)
+      
+      // Usar la version del documento principal si existe, sino usar la plataforma actual o del primer correo
+      const versionJuego = juegoDocData.version || juegoData?.version || plataforma
 
       juegosMap.set(juegoId, {
         id: juegoId,
         nombre: juegoDocData.nombre || juegoData?.nombre || nombreFromId,
         costo: costoJuego, // Precio del documento principal (último correo subido)
-        version: juegoData?.version || plataforma,
+        version: versionJuego, // Categoría del juego (PS4, PS5, PS4 & PS5, etc.)
         foto: juegoDocData.foto || '', // Foto del documento principal
         isOffert: juegoDocData.isOffert || false, // Legacy
         tipoPromocion, // Nuevo campo de tipo de promoción
@@ -264,7 +267,8 @@ export function useGames() {
     plataforma: GamePlatform,
     nombre: string,
     foto?: string,
-    isOffert?: boolean
+    isOffert?: boolean,
+    version?: GamePlatform
   ): Promise<string> => {
     try {
       const juegoId = generarIdJuego(nombre)
@@ -279,7 +283,8 @@ export function useGames() {
       // Siempre crear el documento con al menos estos campos para asegurar que se cree en Firestore
       const juegoData: Record<string, any> = {
         createdAt: new Date(),
-        nombre: nombre
+        nombre: nombre,
+        version: version || plataforma // Si no se especifica, usar la plataforma
       }
       
       if (foto && foto.trim()) juegoData.foto = foto.trim()
@@ -299,6 +304,7 @@ export function useGames() {
     datos: {
       nombre?: string
       foto?: string
+      version?: GamePlatform
       isOffert?: boolean
       tipoPromocion?: 'ninguna' | 'oferta' | 'promocion'
     }
@@ -309,6 +315,7 @@ export function useGames() {
       
       if (datos.nombre !== undefined) updateData.nombre = datos.nombre
       if (datos.foto !== undefined) updateData.foto = datos.foto
+      if (datos.version !== undefined) updateData.version = datos.version
       if (datos.tipoPromocion !== undefined) {
         updateData.tipoPromocion = datos.tipoPromocion
         // Actualizar también isOffert para compatibilidad

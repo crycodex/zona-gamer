@@ -83,6 +83,7 @@ const showEditGame = ref(false)
 const editingGame = ref<GameSummary | null>(null)
 const editGameName = ref('')
 const editPhotoUrl = ref('')
+const editGameVersion = ref<GamePlatform>('PS4 & PS5')
 const editTipoPromocion = ref<'ninguna' | 'oferta' | 'promocion'>('ninguna')
 const isUpdatingGame = ref(false)
 const editGameError = ref('')
@@ -92,6 +93,7 @@ const editGameSuccess = ref('')
 const showCreateGame = ref(false)
 const newGameName = ref('')
 const newGamePhoto = ref('')
+const newGameVersion = ref<GamePlatform>('PS4 & PS5')
 const newGameTipoPromocion = ref<'ninguna' | 'oferta' | 'promocion'>('ninguna')
 const isCreatingGame = ref(false)
 const createGameError = ref('')
@@ -513,6 +515,7 @@ const cerrarDetalles = (): void => {
 const iniciarCreacionJuego = (): void => {
   newGameName.value = ''
   newGamePhoto.value = ''
+  newGameVersion.value = plataformaSeleccionada.value
   newGameTipoPromocion.value = 'ninguna'
   createGameError.value = ''
   createGameSuccess.value = ''
@@ -534,7 +537,8 @@ const handleCreateGame = async (): Promise<void> => {
       plataformaSeleccionada.value,
       newGameName.value.trim(),
       newGamePhoto.value.trim() || undefined,
-      newGameTipoPromocion.value === 'oferta' // Legacy support
+      newGameTipoPromocion.value === 'oferta', // Legacy support
+      newGameVersion.value // Versión del juego
     )
     
     // Actualizar con el nuevo campo de tipo de promoción
@@ -542,7 +546,8 @@ const handleCreateGame = async (): Promise<void> => {
       plataformaSeleccionada.value,
       juegoId,
       {
-        tipoPromocion: newGameTipoPromocion.value
+        tipoPromocion: newGameTipoPromocion.value,
+        version: newGameVersion.value
       }
     )
 
@@ -565,6 +570,7 @@ const cerrarCrearJuego = (): void => {
   showCreateGame.value = false
   newGameName.value = ''
   newGamePhoto.value = ''
+  newGameVersion.value = 'PS4 & PS5'
   newGameTipoPromocion.value = 'ninguna'
   createGameError.value = ''
 }
@@ -573,6 +579,7 @@ const iniciarEdicionJuego = (juego: GameSummary): void => {
   editingGame.value = juego
   editGameName.value = juego.nombre
   editPhotoUrl.value = juego.foto || ''
+  editGameVersion.value = juego.version
   editTipoPromocion.value = juego.tipoPromocion || 'ninguna'
   editGameError.value = ''
   editGameSuccess.value = ''
@@ -598,6 +605,7 @@ const handleUpdateGame = async (): Promise<void> => {
       {
         nombre: editGameName.value.trim(),
         foto: editPhotoUrl.value.trim() || undefined,
+        version: editGameVersion.value,
         tipoPromocion: editTipoPromocion.value
       }
     )
@@ -609,6 +617,7 @@ const handleUpdateGame = async (): Promise<void> => {
     if (juegoIndex !== -1) {
       games.value[juegoIndex]!.nombre = editGameName.value.trim()
       games.value[juegoIndex]!.foto = editPhotoUrl.value.trim()
+      games.value[juegoIndex]!.version = editGameVersion.value
       games.value[juegoIndex]!.tipoPromocion = editTipoPromocion.value
       games.value[juegoIndex]!.isOffert = editTipoPromocion.value === 'oferta'
     }
@@ -631,6 +640,7 @@ const cerrarEditarJuego = (): void => {
   editingGame.value = null
   editGameName.value = ''
   editPhotoUrl.value = ''
+  editGameVersion.value = 'PS4 & PS5'
   editTipoPromocion.value = 'ninguna'
   editGameError.value = ''
 }
@@ -1327,6 +1337,28 @@ onMounted(async () => {
             </label>
           </div>
 
+          <!-- Versión/Categoría del Juego -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+                Versión/Categoría *
+              </span>
+            </label>
+            <select v-model="newGameVersion" class="select select-bordered select-lg">
+              <option value="PS4 & PS5">PS4 & PS5</option>
+              <option value="PS4">PS4</option>
+              <option value="PS5">PS5</option>
+              <option value="Xbox">Xbox</option>
+              <option value="Nintendo Switch">Nintendo Switch</option>
+            </select>
+            <label class="label">
+              <span class="label-text-alt">Esta categoría se usa para filtrar en la tienda</span>
+            </label>
+          </div>
+
           <!-- Sección de Imagen -->
           <div class="divider">
             <span class="flex items-center gap-2 text-sm font-semibold">
@@ -1510,6 +1542,28 @@ onMounted(async () => {
               class="input input-bordered input-lg"
               required
             />
+          </div>
+
+          <!-- Versión/Categoría del Juego -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+                Versión/Categoría *
+              </span>
+            </label>
+            <select v-model="editGameVersion" class="select select-bordered select-lg">
+              <option value="PS4 & PS5">PS4 & PS5</option>
+              <option value="PS4">PS4</option>
+              <option value="PS5">PS5</option>
+              <option value="Xbox">Xbox</option>
+              <option value="Nintendo Switch">Nintendo Switch</option>
+            </select>
+            <label class="label">
+              <span class="label-text-alt">Esta categoría se usa para filtrar en la tienda</span>
+            </label>
           </div>
 
           <!-- Sección de Imágenes -->

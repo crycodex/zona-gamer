@@ -128,6 +128,7 @@ const formatearPrecio = (precio: number): string => {
 }
 
 const platforms: { id: GamePlatform; label: string; icon: string }[] = [
+  { id: 'PS4 & PS5', label: 'Todos', icon: 'ALL' },
   { id: 'PS4', label: 'PS4', icon: 'PS4' },
   { id: 'PS5', label: 'PS5', icon: 'PS5' }
 ]
@@ -140,11 +141,14 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
       <div class="container mx-auto px-4">
         <div class="flex items-center justify-between py-4 gap-6 animate-fadeInUp">
           <!-- Logo -->
+          <a href="/" class="flex items-center gap-2">
           <img 
             :src="logo" 
             alt="Zona Gamers" 
             class="w-30  object-contain"
-          />
+            />
+            />
+          </a>
 
           <!-- Centro: Filtros de Plataformas (PS4 y PS5) y Buscador -->
           <div class="flex-1 flex items-center justify-center gap-4 animate-fadeInUp delay-100">
@@ -156,7 +160,7 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                 @click="handlePlatformChange(platform.id)"
                 :class="[
                   'flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105',
-                  selectedPlatform === platform.id || selectedPlatform === 'PS4 & PS5'
+                  selectedPlatform === platform.id
                     ? 'text-white bg-error/20 border border-error/50 shadow-glow'
                     : 'text-base-content/70 hover:text-white hover:bg-white/5 border border-transparent'
                 ]"

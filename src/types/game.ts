@@ -48,6 +48,7 @@ export interface GameSummary {
 export interface GameDocument {
   nombre?: string
   foto?: string
+  version?: GamePlatform // Categoría del juego: PS4, PS5, PS4 & PS5, etc.
   isOffert?: boolean // Legacy - mantener por compatibilidad
   tipoPromocion?: PromocionType
   costo?: number // Precio actual del juego (actualizado por el último correo)

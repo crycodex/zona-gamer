@@ -22,6 +22,7 @@ const { games, isLoadingGames, cargarJuegos } = useGames()
 const cartStore = useCartStore()
 
 const plataformaSeleccionada = ref<GamePlatform>('PS4 & PS5')
+const filtroPlataforma = ref<GamePlatform>('PS4 & PS5') // Filtro visual en el navbar
 const searchTerm = ref('')
 const cartOpen = ref(false)
 
@@ -32,28 +33,28 @@ const currentPageSearch = ref(1)
 
 // Juegos en OFERTA (para sección superior destacada)
 const juegosEnOferta = computed(() => {
-  return games.value.filter(juego => 
+  return juegosFiltradosPorPlataforma.value.filter(juego => 
     juego.tipoPromocion === 'oferta' || juego.isOffert
   )
 })
 
 // Juegos en PROMOCIÓN (destacados especiales)
 const juegosEnPromocion = computed(() => {
-  return games.value.filter(juego => 
+  return juegosFiltradosPorPlataforma.value.filter(juego => 
     juego.tipoPromocion === 'promocion'
   )
 })
 
 // Juegos destacados (legacy - con descuentos o marcados como destacados)
 const juegosDestacados = computed(() => {
-  return games.value.filter(juego => 
+  return juegosFiltradosPorPlataforma.value.filter(juego => 
     juego.destacado || (juego.descuento && juego.descuento > 0)
   )
 })
 
 // Todas las ofertas y promociones combinadas (para sección inferior)
 const todasLasOfertas = computed(() => {
-  return games.value.filter(juego => 
+  return juegosFiltradosPorPlataforma.value.filter(juego => 
     juego.tipoPromocion === 'oferta' || 
     juego.tipoPromocion === 'promocion' ||
     juego.isOffert
@@ -62,30 +63,50 @@ const todasLasOfertas = computed(() => {
 
 // Juegos filtrados por búsqueda
 const juegosFiltrados = computed(() => {
-  if (!searchTerm.value) return games.value
+  if (!searchTerm.value) return juegosFiltradosPorPlataforma.value
   
   const termino = searchTerm.value.toLowerCase()
-  return games.value.filter(juego => 
+  return juegosFiltradosPorPlataforma.value.filter(juego => 
     juego.nombre.toLowerCase().includes(termino)
   )
 })
 
-// Juegos por categorías
-const juegosPS5 = computed(() => {
+// Juegos filtrados por plataforma seleccionada
+const juegosFiltradosPorPlataforma = computed(() => {
+  // Si es "PS4 & PS5", mostrar todos
+  if (filtroPlataforma.value === 'PS4 & PS5') {
+    return games.value
+  }
+  
+  // Filtrar por la plataforma específica
   return games.value.filter(juego => 
+    juego.version === filtroPlataforma.value || juego.version === 'PS4 & PS5'
+  )
+})
+
+// Juegos por categorías (siempre desde la base completa de juegos)
+const juegosPS5 = computed(() => {
+  return juegosFiltradosPorPlataforma.value.filter(juego => 
     juego.version === 'PS5' || juego.version === 'PS4 & PS5'
   )
 })
 
 const juegosPS4 = computed(() => {
-  return games.value.filter(juego => 
+  return juegosFiltradosPorPlataforma.value.filter(juego => 
     juego.version === 'PS4' || juego.version === 'PS4 & PS5'
   )
 })
 
 const handlePlataformaChange = async (platform: GamePlatform): Promise<void> => {
-  plataformaSeleccionada.value = platform
-  await cargarJuegos(platform)
+  // Actualizar el filtro visual
+  filtroPlataforma.value = platform
+  
+  // Siempre cargar desde PS4 & PS5 (donde están todos los juegos)
+  // y filtrar por el campo version del juego
+  if (plataformaSeleccionada.value !== 'PS4 & PS5') {
+    plataformaSeleccionada.value = 'PS4 & PS5'
+    await cargarJuegos('PS4 & PS5')
+  }
 }
 
 const handleSearch = (query: string): void => {
@@ -179,7 +200,8 @@ watch(searchTerm, () => {
 })
 
 onMounted(() => {
-  cargarJuegos(plataformaSeleccionada.value)
+  // Siempre cargar desde PS4 & PS5
+  cargarJuegos('PS4 & PS5')
 })
 </script>
 
@@ -255,7 +277,7 @@ onMounted(() => {
 
           <!-- Todos los Juegos -->
           <AllGamesSection
-            :games="games"
+            :games="juegosFiltradosPorPlataforma"
             :current-page="currentPageAll"
             :items-per-page="itemsPerPage"
             @page-change="handleAllGamesPageChange"
@@ -350,3 +372,4 @@ onMounted(() => {
     />
   </div>
 </template>
+
