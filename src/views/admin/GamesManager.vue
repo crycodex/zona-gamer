@@ -101,15 +101,41 @@ const createGameSuccess = ref('')
 
 
 const juegosFiltrados = computed(() => {
-  if (!searchTerm.value) return games.value
-  return buscarJuegos(searchTerm.value)
+  // Primero filtrar por plataforma según el campo 'version' de cada juego
+  let juegosPorPlataforma = games.value.filter(juego => {
+    if (plataformaSeleccionada.value === 'PS4 & PS5') {
+      // Mostrar TODOS los juegos (PS4, PS5, y PS4 & PS5)
+      return true
+    }
+    if (plataformaSeleccionada.value === 'PS4') {
+      // Mostrar juegos con version "PS4" o "PS4 & PS5" (compatibles con PS4)
+      return juego.version === 'PS4' || juego.version === 'PS4 & PS5'
+    }
+    if (plataformaSeleccionada.value === 'PS5') {
+      // Mostrar juegos con version "PS5" o "PS4 & PS5" (compatibles con PS5)
+      return juego.version === 'PS5' || juego.version === 'PS4 & PS5'
+    }
+    return true
+  })
+  
+  // Luego filtrar por término de búsqueda si existe
+  if (!searchTerm.value) return juegosPorPlataforma
+  
+  // Aplicar búsqueda y mantener el filtro de plataforma
+  const resultadosBusqueda = buscarJuegos(searchTerm.value)
+  return resultadosBusqueda.filter(juego => {
+    // Verificar que el juego esté en la lista filtrada por plataforma
+    return juegosPorPlataforma.some(j => j.id === juego.id)
+  })
 })
 
 const cargarJuegosPorPlataforma = async (): Promise<void> => {
   vistaActual.value = 'juegos'
   juegoSeleccionado.value = null
   try {
-    await cargarJuegos(plataformaSeleccionada.value)
+    // Todos los juegos están en la colección PS4 & PS5
+    // Cargamos todos y luego filtramos por el campo 'version' de cada juego
+    await cargarJuegos('PS4 & PS5')
   } catch (error) {
     console.error('Error cargando juegos:', error)
   }
@@ -121,7 +147,8 @@ const verCorreosJuego = async (juego: GameSummary): Promise<void> => {
   vistaActual.value = 'correos'
 
   try {
-    correosJuego.value = await cargarCorreosJuego(plataformaSeleccionada.value, juego.id)
+    // Todos los correos están en la colección PS4 & PS5
+    correosJuego.value = await cargarCorreosJuego('PS4 & PS5', juego.id)
   } catch (error) {
     console.error('Error cargando correos:', error)
   } finally {
@@ -369,7 +396,7 @@ const handleCreateEmail = async (): Promise<void> => {
     }
 
     await crearCorreoJuego(
-      plataformaSeleccionada.value,
+      'PS4 & PS5', // Todos los correos están en esta colección
       juegoSeleccionado.value.id,
       newEmail.value.correo,
       emailData
@@ -416,7 +443,7 @@ const handleEditEmail = async (): Promise<void> => {
 
   try {
     await actualizarCorreoJuego(
-      plataformaSeleccionada.value,
+      'PS4 & PS5', // Todos los correos están en esta colección
       juegoSeleccionado.value.id,
       editingEmail.value.correo,
       {
@@ -467,7 +494,7 @@ const handleDelete = async (): Promise<void> => {
   try {
     if (deletingItem.value.tipo === 'correo' && juegoSeleccionado.value) {
       await eliminarCorreoJuego(
-        plataformaSeleccionada.value,
+        'PS4 & PS5', // Todos los correos están en esta colección
         juegoSeleccionado.value.id,
         deletingItem.value.data.correo
       )
@@ -475,7 +502,7 @@ const handleDelete = async (): Promise<void> => {
       await verCorreosJuego(juegoSeleccionado.value)
     } else if (deletingItem.value.tipo === 'juego') {
       await eliminarJuegoCompleto(
-        plataformaSeleccionada.value,
+        'PS4 & PS5', // Todos los juegos están en esta colección
         deletingItem.value.data.id
       )
       deleteSuccess.value = 'Juego eliminado exitosamente'
@@ -534,16 +561,16 @@ const handleCreateGame = async (): Promise<void> => {
 
   try {
     const juegoId = await crearJuego(
-      plataformaSeleccionada.value,
+      'PS4 & PS5', // Todos los juegos están en esta colección
       newGameName.value.trim(),
       newGamePhoto.value.trim() || undefined,
       newGameTipoPromocion.value === 'oferta', // Legacy support
-      newGameVersion.value // Versión del juego
+      newGameVersion.value // Versión del juego (PS4, PS5, o PS4 & PS5)
     )
     
     // Actualizar con el nuevo campo de tipo de promoción
     await actualizarJuego(
-      plataformaSeleccionada.value,
+      'PS4 & PS5', // Todos los juegos están en esta colección
       juegoId,
       {
         tipoPromocion: newGameTipoPromocion.value,
@@ -600,7 +627,7 @@ const handleUpdateGame = async (): Promise<void> => {
 
   try {
     await actualizarJuego(
-      plataformaSeleccionada.value,
+      'PS4 & PS5', // Todos los juegos están en esta colección
       editingGame.value.id,
       {
         nombre: editGameName.value.trim(),
