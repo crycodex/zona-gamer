@@ -44,7 +44,8 @@ const newEmail = ref({
   codigosGenerados: [] as string[],
   fecha: new Date(),
   codigo: '',
-  cuentas: [] as AccountOwner[]
+  cuentas: [] as AccountOwner[],
+  saldo: undefined as number | undefined
 })
 const isCreating = ref(false)
 const createError = ref('')
@@ -61,7 +62,8 @@ const editEmailData = ref({
   codigosGenerados: [] as string[],
   fecha: new Date(),
   codigo: '',
-  cuentas: [] as AccountOwner[]
+  cuentas: [] as AccountOwner[],
+  saldo: undefined as number | undefined
 })
 const isEditing = ref(false)
 const editError = ref('')
@@ -204,8 +206,15 @@ const parsearArchivoTxt = (contenido: string): void => {
         const nombreMatch = linea.match(/la tiene\s+(.+?)\s+\+593/)
         const nombre = nombreMatch && nombreMatch[1] ? nombreMatch[1].trim() : ''
         
+        // Extraer saldo si está presente (buscar patrones como "Saldo: $XX" o "Saldo: XX")
+        let saldo: number | undefined = undefined
+        const saldoMatch = linea.match(/Saldo[:\s]+[\$]?(\d+\.?\d*)/i)
+        if (saldoMatch && saldoMatch[1]) {
+          saldo = parseFloat(saldoMatch[1])
+        }
+        
         if (telefono && nombre) {
-          cuentas.push({ tipo, nombre, telefono })
+          cuentas.push({ tipo, nombre, telefono, saldo })
         }
       }
     })
@@ -222,6 +231,15 @@ const parsearArchivoTxt = (contenido: string): void => {
     if (costoIdx !== -1 && lineas[costoIdx]) {
       const costoStr = lineas[costoIdx]!.replace('Costo:', '').replace('$', '').trim()
       newEmail.value.costo = parseFloat(costoStr) || 0
+    }
+    
+    // Buscar saldo del correo (buscar patrones como "Saldo: $XX" o "Saldo: XX")
+    const saldoIdx = lineas.findIndex(l => l.toLowerCase().includes('saldo'))
+    if (saldoIdx !== -1 && lineas[saldoIdx]) {
+      const saldoMatch = lineas[saldoIdx]!.match(/Saldo[:\s]+[\$]?(\d+\.?\d*)/i)
+      if (saldoMatch && saldoMatch[1]) {
+        newEmail.value.saldo = parseFloat(saldoMatch[1])
+      }
     }
     
     // Buscar código (después de "MASTER")
@@ -341,7 +359,8 @@ const agregarCuenta = (isEdit: boolean = false): void => {
   const nuevaCuenta: AccountOwner = {
     tipo: 'Principal PS4',
     nombre: '',
-    telefono: ''
+    telefono: '',
+    saldo: undefined // Saldo opcional
   }
   if (isEdit) {
     editEmailData.value.cuentas.push(nuevaCuenta)
@@ -370,7 +389,8 @@ const iniciarCreacion = (): void => {
     codigosGenerados: [],
     fecha: new Date(),
     codigo: juegoSeleccionado.value.id,
-    cuentas: []
+    cuentas: [],
+    saldo: undefined
   }
   createError.value = ''
   createSuccess.value = ''
@@ -390,8 +410,29 @@ const handleCreateEmail = async (): Promise<void> => {
   createSuccess.value = ''
 
   try {
+    // Limpiar valores de saldo de las cuentas: eliminar el campo si es undefined
+    const cuentasLimpias = newEmail.value.cuentas.map(cuenta => {
+      const cuentaLimpia: AccountOwner = {
+        tipo: cuenta.tipo,
+        nombre: cuenta.nombre,
+        telefono: cuenta.telefono
+      }
+      // Solo agregar saldo si tiene un valor válido
+      if (cuenta.saldo !== undefined && cuenta.saldo !== null && !isNaN(cuenta.saldo)) {
+        cuentaLimpia.saldo = cuenta.saldo
+      }
+      return cuentaLimpia
+    })
+
+    // Limpiar saldo del correo: convertir NaN, null, o valores vacíos a undefined
+    const saldoCorreo = newEmail.value.saldo !== undefined && newEmail.value.saldo !== null && !isNaN(newEmail.value.saldo)
+      ? newEmail.value.saldo
+      : undefined
+
     const emailData = {
       ...newEmail.value,
+      cuentas: cuentasLimpias,
+      saldo: saldoCorreo,
       createdBy: currentUserData.value?.uid
     }
 
@@ -427,7 +468,8 @@ const iniciarEdicion = (email: GameEmailAccount): void => {
     codigosGenerados: [...email.codigosGenerados],
     fecha: email.fecha,
     codigo: email.codigo,
-    cuentas: JSON.parse(JSON.stringify(email.cuentas)) // Deep copy
+    cuentas: JSON.parse(JSON.stringify(email.cuentas)), // Deep copy
+    saldo: email.saldo
   }
   editError.value = ''
   editSuccess.value = ''
@@ -442,6 +484,25 @@ const handleEditEmail = async (): Promise<void> => {
   editSuccess.value = ''
 
   try {
+    // Limpiar valores de saldo de las cuentas: eliminar el campo si es undefined
+    const cuentasLimpias = editEmailData.value.cuentas.map(cuenta => {
+      const cuentaLimpia: AccountOwner = {
+        tipo: cuenta.tipo,
+        nombre: cuenta.nombre,
+        telefono: cuenta.telefono
+      }
+      // Solo agregar saldo si tiene un valor válido
+      if (cuenta.saldo !== undefined && cuenta.saldo !== null && !isNaN(cuenta.saldo)) {
+        cuentaLimpia.saldo = cuenta.saldo
+      }
+      return cuentaLimpia
+    })
+
+    // Limpiar saldo del correo: convertir NaN, null, o valores vacíos a undefined
+    const saldoCorreo = editEmailData.value.saldo !== undefined && editEmailData.value.saldo !== null && !isNaN(editEmailData.value.saldo)
+      ? editEmailData.value.saldo
+      : undefined
+
     await actualizarCorreoJuego(
       'PS4 & PS5', // Todos los correos están en esta colección
       juegoSeleccionado.value.id,
@@ -452,7 +513,8 @@ const handleEditEmail = async (): Promise<void> => {
         codigoMaster: editEmailData.value.codigoMaster,
         codigosGenerados: editEmailData.value.codigosGenerados,
         codigo: editEmailData.value.codigo,
-        cuentas: editEmailData.value.cuentas
+        cuentas: cuentasLimpias,
+        saldo: saldoCorreo
       }
     )
 
@@ -1056,6 +1118,20 @@ onMounted(async () => {
 
             <div class="form-control">
               <label class="label">
+                <span class="label-text">Saldo del Correo</span>
+                <span class="label-text-alt text-xs opacity-60">Opcional</span>
+              </label>
+              <input
+                v-model.number="newEmail.saldo"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                class="input input-bordered"
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label">
                 <span class="label-text">Código</span>
               </label>
               <input
@@ -1187,6 +1263,20 @@ onMounted(async () => {
                 v-model.number="editEmailData.costo"
                 type="number"
                 step="0.01"
+                class="input input-bordered"
+              />
+            </div>
+
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">Saldo del Correo</span>
+                <span class="label-text-alt text-xs opacity-60">Opcional</span>
+              </label>
+              <input
+                v-model.number="editEmailData.saldo"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
                 class="input input-bordered"
               />
             </div>
@@ -1821,6 +1911,10 @@ onMounted(async () => {
                 <div>
                   <span class="font-semibold">Fecha:</span>
                   <p>{{ formatearFecha(selectedEmailDetails.fecha) }}</p>
+                </div>
+                <div v-if="selectedEmailDetails.saldo !== undefined">
+                  <span class="font-semibold">Saldo del Correo:</span>
+                  <p class="badge badge-success badge-lg">{{ formatearPrecio(selectedEmailDetails.saldo) }}</p>
                 </div>
               </div>
             </div>

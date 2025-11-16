@@ -110,6 +110,7 @@ export function useGames() {
           fecha: data.fecha?.toDate() || new Date(),
           codigo: data.codigo || '',
           cuentas: data.cuentas || [],
+          saldo: data.saldo !== undefined ? data.saldo : undefined,
           createdAt: data.createdAt?.toDate() || new Date(),
           updatedAt: data.updatedAt?.toDate() || new Date(),
           createdBy: data.createdBy
@@ -145,6 +146,7 @@ export function useGames() {
         fecha: data.fecha?.toDate() || new Date(),
         codigo: data.codigo || '',
         cuentas: data.cuentas || [],
+        saldo: data.saldo !== undefined ? data.saldo : undefined,
         createdAt: data.createdAt?.toDate() || new Date(),
         updatedAt: data.updatedAt?.toDate() || new Date(),
         createdBy: data.createdBy
@@ -165,7 +167,8 @@ export function useGames() {
       const correoRef = doc(db, 'games', plataforma, 'juegos', juegoId, 'correos', correo)
       const juegoRef = doc(db, 'games', plataforma, 'juegos', juegoId)
 
-      const correoData = {
+      // Construir el objeto de datos, filtrando campos undefined
+      const correoData: Record<string, any> = {
         nombre: datosCorreo.nombre,
         costo: datosCorreo.costo,
         version: datosCorreo.version,
@@ -175,8 +178,15 @@ export function useGames() {
         codigo: datosCorreo.codigo,
         cuentas: datosCorreo.cuentas,
         createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-        createdBy: datosCorreo.createdBy
+        updatedAt: Timestamp.now()
+      }
+
+      // Agregar campos opcionales solo si tienen valor
+      if (datosCorreo.saldo !== undefined) {
+        correoData.saldo = datosCorreo.saldo
+      }
+      if (datosCorreo.createdBy) {
+        correoData.createdBy = datosCorreo.createdBy
       }
 
       // Crear el correo
@@ -204,8 +214,17 @@ export function useGames() {
       const correoRef = doc(db, 'games', plataforma, 'juegos', juegoId, 'correos', correo)
       const juegoRef = doc(db, 'games', plataforma, 'juegos', juegoId)
 
+      // Filtrar campos undefined (Firebase no los acepta)
+      const datosLimpios: Record<string, any> = {}
+      Object.keys(datos).forEach(key => {
+        const value = datos[key as keyof typeof datos]
+        if (value !== undefined) {
+          datosLimpios[key] = value
+        }
+      })
+
       const datosActualizados: Record<string, any> = {
-        ...datos,
+        ...datosLimpios,
         updatedAt: Timestamp.now()
       }
 

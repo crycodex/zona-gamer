@@ -22,6 +22,7 @@ export interface GameEmailAccount {
   fecha: Date
   codigo: string
   cuentas: AccountOwner[] // Array de dueños de cuentas
+  saldo?: number // Saldo del correo (opcional)
   createdAt: Date
   updatedAt: Date
   createdBy?: string
