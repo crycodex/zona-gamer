@@ -20,6 +20,7 @@ const { games, cargarJuegos, cargando } = useGames()
 const plataformaFiltro = ref<GamePlatform>('PS4 & PS5')
 const searchTerm = ref('')
 const promoFiltro = ref<'todas' | 'oferta' | 'promocion' | 'ninguna'>('todas')
+const stockFiltro = ref<'todas' | 'con' | 'sin'>('todas')
 const sortBy = ref<'nombre' | 'costo' | 'correos'>('nombre')
 const sortOrder = ref<'asc' | 'desc'>('asc')
 
@@ -66,6 +67,20 @@ const juegosFiltrados = computed(() => {
     })
   }
 
+  // Filtro por stock
+  if (stockFiltro.value !== 'todas') {
+    resultado = resultado.filter(juego => {
+      const stock = juego.stockAccounts ?? 0
+      if (stockFiltro.value === 'con') {
+        return stock > 0
+      }
+      if (stockFiltro.value === 'sin') {
+        return stock === 0
+      }
+      return true
+    })
+  }
+
   // Ordenamiento
   resultado = [...resultado].sort((a, b) => {
     let compareValue = 0
@@ -98,6 +113,7 @@ const estadisticas = computed(() => {
   const juegosEnOferta = filtered.filter(j => j.tipoPromocion === 'oferta' || j.isOffert).length
   const juegosEnPromocion = filtered.filter(j => j.tipoPromocion === 'promocion').length
   const totalCorreos = filtered.reduce((sum, j) => sum + j.totalCorreos, 0)
+  const totalStock = filtered.reduce((sum, j) => sum + (j.stockAccounts || 0), 0)
   const costoPromedio = filtered.length > 0 
     ? filtered.reduce((sum, j) => sum + j.costo, 0) / filtered.length 
     : 0
@@ -115,6 +131,7 @@ const estadisticas = computed(() => {
     juegosEnOferta,
     juegosEnPromocion,
     totalCorreos,
+    totalStock,
     costoPromedio,
     costoMinimo,
     costoMaximo
@@ -175,7 +192,7 @@ const verDetallesJuego = (juego: GameSummary): void => {
     </div>
 
     <!-- Cards de Estadísticas Principales -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
       <!-- Total de Juegos -->
       <div class="stat bg-gradient-to-br from-primary/20 to-primary/5 rounded-2xl border border-primary/20 shadow-lg">
         <div class="stat-figure text-primary">
@@ -222,6 +239,18 @@ const verDetallesJuego = (juego: GameSummary): void => {
         <div class="stat-title text-base-content/70">Total de Cuentas</div>
         <div class="stat-value text-warning">{{ estadisticas.totalCorreos }}</div>
         <div class="stat-desc text-base-content/60">Correos disponibles</div>
+      </div>
+
+      <!-- Cuentas con Stock -->
+      <div class="stat bg-gradient-to-br from-info/20 to-info/5 rounded-2xl border border-info/20 shadow-lg">
+        <div class="stat-figure text-info">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v2a2 2 0 002 2h2a2 2 0 002-2v-2m-6 0H5a2 2 0 01-2-2V7a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4m-6 0h6" />
+          </svg>
+        </div>
+        <div class="stat-title text-base-content/70">Cuentas con Stock</div>
+        <div class="stat-value text-info">{{ estadisticas.totalStock }}</div>
+        <div class="stat-desc text-base-content/60">Marcadas como disponibles</div>
       </div>
     </div>
 
@@ -271,7 +300,7 @@ const verDetallesJuego = (juego: GameSummary): void => {
           </button>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <!-- Búsqueda -->
           <div class="form-control">
             <label class="label">
@@ -352,6 +381,18 @@ const verDetallesJuego = (juego: GameSummary): void => {
               </button>
             </div>
           </div>
+
+          <!-- Filtro Stock -->
+          <div class="form-control">
+            <label class="label">
+              <span class="label-text font-semibold">Stock</span>
+            </label>
+            <select v-model="stockFiltro" class="select select-bordered">
+              <option value="todas">Todos</option>
+              <option value="con">Con stock</option>
+              <option value="sin">Sin stock</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>
@@ -382,6 +423,7 @@ const verDetallesJuego = (juego: GameSummary): void => {
                 <th>Versión</th>
                 <th>Precio</th>
                 <th>Cuentas</th>
+                <th>Stock</th>
                 <th>Promoción</th>
                 <th>Acciones</th>
               </tr>
@@ -424,6 +466,14 @@ const verDetallesJuego = (juego: GameSummary): void => {
                 <td class="font-bold text-success">{{ formatearPrecio(juego.costo) }}</td>
                 <td>
                   <span class="badge badge-ghost">{{ juego.totalCorreos }}</span>
+                </td>
+                <td>
+                  <span 
+                    class="badge"
+                    :class="(juego.stockAccounts || 0) > 0 ? 'badge-primary' : 'badge-ghost'"
+                  >
+                    {{ juego.stockAccounts || 0 }}
+                  </span>
                 </td>
                 <td>
                   <span 

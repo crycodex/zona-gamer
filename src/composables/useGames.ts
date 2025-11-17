@@ -12,7 +12,7 @@ import {
   Timestamp
 } from 'firebase/firestore'
 import { db } from '@/config/firebase'
-import type { GameEmailAccount, GameSummary, GamePlatform } from '@/types/game'
+import type { GameEmailAccount, GameSummary, GamePlatform, AccountOwner } from '@/types/game'
 
 const games = ref<GameSummary[]>([])
 const gameEmails = ref<GameEmailAccount[]>([])
@@ -38,11 +38,20 @@ export function useGames() {
 
       const correos: string[] = []
       let juegoData: any = null
+      let stockCount = 0
 
       correosSnapshot.docs.forEach((correoDoc) => {
+        const data = correoDoc.data()
         correos.push(correoDoc.id)
         if (!juegoData) {
-          juegoData = correoDoc.data()
+          juegoData = data
+        }
+        if (Array.isArray(data.cuentas)) {
+          data.cuentas.forEach((cuenta: AccountOwner) => {
+            if (cuenta?.hasStock) {
+              stockCount++
+            }
+          })
         }
       })
 
@@ -75,7 +84,8 @@ export function useGames() {
         isOffert: juegoDocData.isOffert || false, // Legacy
         tipoPromocion, // Nuevo campo de tipo de promoción
         totalCorreos: correos.length,
-        correos
+        correos,
+        stockAccounts: stockCount
       })
       }
 

@@ -180,6 +180,11 @@ const formatearPrecio = (precio: number): string => {
   }).format(precio)
 }
 
+const contarStockCuentas = (cuentas: AccountOwner[]): number => {
+  if (!cuentas) return 0
+  return cuentas.filter(cuenta => cuenta?.hasStock).length
+}
+
 // Función para parsear archivo .txt
 const parsearArchivoTxt = (contenido: string): void => {
   try {
@@ -198,13 +203,19 @@ const parsearArchivoTxt = (contenido: string): void => {
         if (linea.includes('Secundaria PS4')) tipo = 'Secundaria PS4'
         else if (linea.includes('Principal PS5')) tipo = 'Principal PS5'
         
+        const esStock = /stock/i.test(linea)
+        
         // Extraer teléfono (empieza con +593)
         const telefonoMatch = linea.match(/\+593\s*\d+\s*\d+\s*\d+\s*\d+/)
         const telefono = telefonoMatch ? telefonoMatch[0].replace(/\s+/g, ' ') : ''
         
         // Extraer nombre (texto entre "la tiene" y el teléfono)
         const nombreMatch = linea.match(/la tiene\s+(.+?)\s+\+593/)
-        const nombre = nombreMatch && nombreMatch[1] ? nombreMatch[1].trim() : ''
+        let nombre = nombreMatch && nombreMatch[1] ? nombreMatch[1].trim() : ''
+        
+        if (!nombre && esStock) {
+          nombre = 'STOCK'
+        }
         
         // Extraer saldo si está presente (buscar patrones como "Saldo: $XX" o "Saldo: XX")
         let saldo: number | undefined = undefined
@@ -213,8 +224,16 @@ const parsearArchivoTxt = (contenido: string): void => {
           saldo = parseFloat(saldoMatch[1])
         }
         
-        if (telefono && nombre) {
-          cuentas.push({ tipo, nombre, telefono, saldo })
+        if (nombre) {
+          const cuentaData: AccountOwner = {
+            tipo,
+            nombre,
+            telefono: telefono || '',
+            saldo,
+            hasStock: esStock ? true : undefined
+          }
+          
+          cuentas.push(cuentaData)
         }
       }
     })
@@ -360,7 +379,8 @@ const agregarCuenta = (isEdit: boolean = false): void => {
     tipo: 'Principal PS4',
     nombre: '',
     telefono: '',
-    saldo: undefined // Saldo opcional
+    saldo: undefined, // Saldo opcional
+    hasStock: false
   }
   if (isEdit) {
     editEmailData.value.cuentas.push(nuevaCuenta)
@@ -420,6 +440,9 @@ const handleCreateEmail = async (): Promise<void> => {
       // Solo agregar saldo si tiene un valor válido
       if (cuenta.saldo !== undefined && cuenta.saldo !== null && !isNaN(cuenta.saldo)) {
         cuentaLimpia.saldo = cuenta.saldo
+      }
+      if (cuenta.hasStock) {
+        cuentaLimpia.hasStock = true
       }
       return cuentaLimpia
     })
@@ -494,6 +517,9 @@ const handleEditEmail = async (): Promise<void> => {
       // Solo agregar saldo si tiene un valor válido
       if (cuenta.saldo !== undefined && cuenta.saldo !== null && !isNaN(cuenta.saldo)) {
         cuentaLimpia.saldo = cuenta.saldo
+      }
+      if (cuenta.hasStock) {
+        cuentaLimpia.hasStock = true
       }
       return cuentaLimpia
     })
@@ -889,6 +915,7 @@ onMounted(async () => {
                   <th>Nombre del Juego</th>
                   <th>Precio</th>
                   <th>Total Correos</th>
+                  <th>Stock</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -921,6 +948,14 @@ onMounted(async () => {
                   </td>
                   <td>
                     <span class="badge badge-info">{{ juego.totalCorreos }}</span>
+                  </td>
+                  <td>
+                    <span 
+                      class="badge" 
+                      :class="(juego.stockAccounts || 0) > 0 ? 'badge-primary' : 'badge-ghost'"
+                    >
+                      {{ juego.stockAccounts || 0 }}
+                    </span>
                   </td>
                   <td>
                     <div class="flex gap-2">
@@ -991,6 +1026,7 @@ onMounted(async () => {
                   <th>Correo</th>
                   <th>Códigos</th>
                   <th>Cuentas</th>
+                  <th>Stock</th>
                   <th>Fecha</th>
                   <th>Acciones</th>
                 </tr>
@@ -1007,6 +1043,14 @@ onMounted(async () => {
                   </td>
                   <td>
                     <span class="badge badge-success">{{ email.cuentas.length }}</span>
+                  </td>
+                  <td>
+                    <span 
+                      class="badge" 
+                      :class="contarStockCuentas(email.cuentas) > 0 ? 'badge-primary' : 'badge-ghost'"
+                    >
+                      {{ contarStockCuentas(email.cuentas) }}
+                    </span>
                   </td>
                   <td>{{ formatearFecha(email.fecha) }}</td>
                   <td>
@@ -1191,7 +1235,10 @@ onMounted(async () => {
             <div v-if="newEmail.cuentas.length > 0" class="space-y-3 max-h-60 overflow-y-auto border border-base-300 rounded p-3">
               <div v-for="(cuenta, index) in newEmail.cuentas" :key="index" class="bg-base-200 p-3 rounded space-y-2">
                 <div class="flex justify-between items-center">
-                  <span class="font-semibold text-sm">Cuenta {{ index + 1 }}</span>
+                  <span class="font-semibold text-sm flex items-center gap-2">
+                    Cuenta {{ index + 1 }}
+                    <span v-if="cuenta.hasStock" class="badge badge-success badge-xs">Stock</span>
+                  </span>
                   <button type="button" class="btn btn-xs btn-error btn-circle" @click="eliminarCuenta(index, false)">
                     ✕
                   </button>
@@ -1204,6 +1251,10 @@ onMounted(async () => {
                 <input v-model="cuenta.nombre" type="text" placeholder="Nombre" class="input input-bordered input-sm w-full" />
                 <input v-model="cuenta.telefono" type="text" placeholder="Teléfono" class="input input-bordered input-sm w-full" />
                 <input v-model.number="cuenta.saldo" type="number" step="0.01" placeholder="Saldo (opcional)" class="input input-bordered input-sm w-full" />
+                <label class="label cursor-pointer justify-start gap-3">
+                  <span class="label-text text-sm">Cuenta con stock</span>
+                  <input v-model="cuenta.hasStock" type="checkbox" class="toggle toggle-primary toggle-sm" />
+                </label>
               </div>
             </div>
             <div v-else class="text-sm text-base-content opacity-50 p-4 text-center border border-dashed border-base-300 rounded">
@@ -1340,7 +1391,10 @@ onMounted(async () => {
             <div v-if="editEmailData.cuentas.length > 0" class="space-y-3 max-h-60 overflow-y-auto border border-base-300 rounded p-3">
               <div v-for="(cuenta, index) in editEmailData.cuentas" :key="index" class="bg-base-200 p-3 rounded space-y-2">
                 <div class="flex justify-between items-center">
-                  <span class="font-semibold text-sm">Cuenta {{ index + 1 }}</span>
+                  <span class="font-semibold text-sm flex items-center gap-2">
+                    Cuenta {{ index + 1 }}
+                    <span v-if="cuenta.hasStock" class="badge badge-success badge-xs">Stock</span>
+                  </span>
                   <button type="button" class="btn btn-xs btn-error btn-circle" @click="eliminarCuenta(index, true)">
                     ✕
                   </button>
@@ -1353,6 +1407,10 @@ onMounted(async () => {
                 <input v-model="cuenta.nombre" type="text" placeholder="Nombre" class="input input-bordered input-sm w-full" />
                 <input v-model="cuenta.telefono" type="text" placeholder="Teléfono" class="input input-bordered input-sm w-full" />
                 <input v-model.number="cuenta.saldo" type="number" step="0.01" placeholder="Saldo (opcional)" class="input input-bordered input-sm w-full" />
+                <label class="label cursor-pointer justify-start gap-3">
+                  <span class="label-text text-sm">Cuenta con stock</span>
+                  <input v-model="cuenta.hasStock" type="checkbox" class="toggle toggle-primary toggle-sm" />
+                </label>
               </div>
             </div>
             <div v-else class="text-sm text-base-content opacity-50 p-4 text-center border border-dashed border-base-300 rounded">
@@ -1956,6 +2014,7 @@ onMounted(async () => {
                       }">
                         {{ cuenta.tipo }}
                       </span>
+                      <span v-if="cuenta.hasStock" class="badge badge-success badge-sm">Stock</span>
                       <span class="font-medium">{{ cuenta.nombre }}</span>
                     </div>
                     <div class="text-xs opacity-70 mt-1">{{ cuenta.telefono }}</div>

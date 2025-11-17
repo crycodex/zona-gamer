@@ -9,6 +9,7 @@ export interface AccountOwner {
   telefono: string
   tipo: AccountType
   saldo?: number // Saldo opcional de la cuenta
+  hasStock?: boolean // Indica si esta cuenta representa stock disponible
 }
 
 // Cada correo dentro de un juego tiene toda esta información
@@ -39,6 +40,7 @@ export interface GameSummary {
   tipoPromocion?: PromocionType // Tipo de promoción: ninguna, oferta o promocion
   totalCorreos: number
   correos: string[] // Lista de correos asociados
+  stockAccounts?: number // Número de cuentas marcadas como stock
   descuento?: number // Porcentaje de descuento (0-100)
   precioOriginal?: number // Precio antes del descuento
   rating?: number // Calificación (0-5)
