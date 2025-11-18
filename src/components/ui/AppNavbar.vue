@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useRoles } from '@/composables/useRoles'
 import { useCartStore } from '@/stores/cart'
-import { Search, ShoppingCart, User, Send, Gamepad2, LayoutDashboard } from 'lucide-vue-next'
+import { Search, ShoppingCart, User, Send, Gamepad2, LayoutDashboard, Menu, X } from 'lucide-vue-next'
 import type { GamePlatform } from '@/types/game'
 import logo from '/Images/logo/logo.png'
 
@@ -16,6 +16,9 @@ const cartStore = useCartStore()
 const searchQuery = ref('')
 const selectedPlatform = ref<GamePlatform>('PS4 & PS5')
 const isSearchExpanded = ref(false)
+const isMobileMenuOpen = ref(false)
+const userDropdownRef = ref<HTMLElement | null>(null)
+const cartDropdownRef = ref<HTMLElement | null>(null)
 
 const emit = defineEmits<{
   openCart: []
@@ -40,15 +43,117 @@ const irAlDashboard = (): void => {
   }
 }
 
+
+const positionDropdown = (dropdownRef: HTMLElement | null, buttonElement: HTMLElement | null): void => {
+  if (!dropdownRef || !buttonElement || window.innerWidth >= 1024) return
+  
+  const rect = buttonElement.getBoundingClientRect()
+  const scrollY = window.scrollY
+  const scrollX = window.scrollX
+  
+  dropdownRef.style.position = 'fixed'
+  dropdownRef.style.top = `${rect.bottom + scrollY + 8}px`
+  dropdownRef.style.right = `${window.innerWidth - rect.right - scrollX}px`
+  dropdownRef.style.left = 'auto'
+  dropdownRef.style.transform = 'none'
+  dropdownRef.style.marginTop = '0'
+}
+
+const openCart = (): void => {
+  emit('openCart')
+  // Posicionar dropdown del carrito en móvil
+  setTimeout(() => {
+    if (cartDropdownRef.value) {
+      const button = cartDropdownRef.value.closest('.dropdown')?.querySelector('[role="button"]') as HTMLElement
+      if (button) {
+        positionDropdown(cartDropdownRef.value, button)
+      }
+    }
+  }, 50)
+}
+
+const handleUserDropdownToggle = (): void => {
+  // Posicionar dropdown de usuario en móvil
+  setTimeout(() => {
+    if (userDropdownRef.value) {
+      const button = userDropdownRef.value.closest('.dropdown')?.querySelector('[role="button"]') as HTMLElement
+      if (button) {
+        positionDropdown(userDropdownRef.value, button)
+      }
+    }
+  }, 50)
+}
+
+// Observar cambios en los dropdowns para reposicionarlos
+let userObserver: MutationObserver | null = null
+let cartObserver: MutationObserver | null = null
+let handleReposition: (() => void) | null = null
+
+const setupDropdownObserver = (dropdownRef: HTMLElement | null, buttonSelector: string): MutationObserver | null => {
+  if (!dropdownRef || window.innerWidth >= 1024) return null
+  
+  const observer = new MutationObserver(() => {
+    nextTick(() => {
+      const button = dropdownRef.closest('.dropdown')?.querySelector(buttonSelector) as HTMLElement
+      if (button && dropdownRef.offsetParent !== null) {
+        positionDropdown(dropdownRef, button)
+      }
+    })
+  })
+  
+  observer.observe(dropdownRef, {
+    attributes: true,
+    attributeFilter: ['style', 'class'],
+    childList: false,
+    subtree: false
+  })
+  
+  return observer
+}
+
 onMounted(() => {
   if (currentUser.value) {
     loadUserData()
   }
+  
+  // Configurar observers para los dropdowns después de que se monten
+  nextTick(() => {
+    if (userDropdownRef.value) {
+      userObserver = setupDropdownObserver(userDropdownRef.value, '[role="button"]')
+    }
+    if (cartDropdownRef.value) {
+      cartObserver = setupDropdownObserver(cartDropdownRef.value, '[role="button"]')
+    }
+  })
+  
+  // Reposicionar dropdowns al hacer scroll o redimensionar
+  handleReposition = (): void => {
+    if (userDropdownRef.value && window.innerWidth < 1024) {
+      const button = userDropdownRef.value.closest('.dropdown')?.querySelector('[role="button"]') as HTMLElement
+      if (button && userDropdownRef.value.offsetParent !== null) {
+        positionDropdown(userDropdownRef.value, button)
+      }
+    }
+    if (cartDropdownRef.value && window.innerWidth < 1024) {
+      const button = cartDropdownRef.value.closest('.dropdown')?.querySelector('[role="button"]') as HTMLElement
+      if (button && cartDropdownRef.value.offsetParent !== null) {
+        positionDropdown(cartDropdownRef.value, button)
+      }
+    }
+  }
+  
+  window.addEventListener('scroll', handleReposition, { passive: true })
+  window.addEventListener('resize', handleReposition)
 })
 
-const openCart = (): void => {
-  emit('openCart')
-}
+onUnmounted(() => {
+  if (handleReposition) {
+    window.removeEventListener('scroll', handleReposition)
+    window.removeEventListener('resize', handleReposition)
+  }
+  if (userObserver) userObserver.disconnect()
+  if (cartObserver) cartObserver.disconnect()
+})
 
 const handleSearch = (): void => {
   emit('search', searchQuery.value)
@@ -118,6 +223,16 @@ const handleQuickCheckout = (): void => {
 const handlePlatformChange = (platform: GamePlatform): void => {
   selectedPlatform.value = platform
   emit('platformChange', platform)
+  // Cerrar menú móvil después de seleccionar plataforma
+  isMobileMenuOpen.value = false
+}
+
+const toggleMobileMenu = (): void => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+const closeMobileMenu = (): void => {
+  isMobileMenuOpen.value = false
 }
 
 const formatearPrecio = (precio: number): string => {
@@ -135,38 +250,38 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
 </script>
 
 <template>
-  <header class="glass-effect shadow-glow sticky top-0 z-50 border-b border-white/10">
-    <!-- Barra superior con logo, búsqueda y acciones -->
-    <div class="backdrop-blur-custom">
-      <div class="container mx-auto px-4">
-        <div class="flex items-center justify-between py-4 gap-6 animate-fadeInUp">
+  <!-- Navbar flotante con márgenes y bordes redondeados -->
+  <header class="sticky top-4 z-50 px-2 sm:px-4 animate-fadeInUp">
+    <nav class="navbar-glass shadow-2xl rounded-2xl border border-white/30">
+      <div class="container mx-auto px-3 sm:px-4 lg:px-6 relative z-10">
+        <!-- Barra principal -->
+        <div class="flex items-center justify-between py-3 sm:py-4 gap-2 sm:gap-4 lg:gap-6">
           <!-- Logo -->
-          <a href="/" class="flex items-center gap-2">
-          <img 
-            :src="logo" 
-            alt="Zona Gamers" 
-            class="w-30  object-contain"
-            
+          <a href="/" class="flex items-center gap-2 shrink-0 z-10">
+            <img 
+              :src="logo" 
+              alt="Zona Gamers" 
+              class="h-8 sm:h-10 lg:h-12 w-auto object-contain transition-transform duration-300 hover:scale-105"
             />
           </a>
 
-          <!-- Centro: Filtros de Plataformas (PS4 y PS5) y Buscador -->
-          <div class="flex-1 flex items-center justify-center gap-4 animate-fadeInUp delay-100">
+          <!-- Centro: Filtros de Plataformas y Buscador (Desktop) -->
+          <div class="hidden lg:flex flex-1 items-center justify-center gap-4 animate-fadeInUp delay-100">
             <!-- Filtros de Plataformas (PS4 y PS5) -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
               <button
                 v-for="platform in platforms"
                 :key="platform.id"
                 @click="handlePlatformChange(platform.id)"
                 :class="[
-                  'flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105',
+                  'flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 text-sm',
                   selectedPlatform === platform.id
                     ? 'text-white bg-error/20 border border-error/50 shadow-glow'
                     : 'text-base-content/70 hover:text-white hover:bg-white/5 border border-transparent'
                 ]"
               >
-                <Gamepad2 :size="20" class="shrink-0" />
-                <span class="text-sm">{{ platform.label }}</span>
+                <Gamepad2 :size="18" class="shrink-0" />
+                <span>{{ platform.label }}</span>
               </button>
             </div>
 
@@ -176,9 +291,9 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
               <button
                 v-if="!isSearchExpanded"
                 @click="toggleSearch"
-                class="btn btn-circle bg-linear-gradient(to right, #dc2626, #991b1b) hover:from-orange-600 hover:to-red-600 border-none shadow-lg text-white transition-all duration-300 hover:scale-110 w-12 h-12"
+                class="btn btn-circle bg-gradient-to-r from-error to-error/80 hover:from-orange-600 hover:to-red-600 border-none shadow-lg text-white transition-all duration-300 hover:scale-110 w-10 h-10 sm:w-12 sm:h-12"
               >
-                <Search :size="20" />
+                <Search :size="18" />
               </button>
 
               <!-- Input expandido -->
@@ -190,42 +305,42 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                   v-model="searchQuery"
                   type="text"
                   placeholder="Minecraft, RPG, multijugador..."
-                  class="input bg-linear-gradient(to right, #dc2626, #991b1b) border-none text-white placeholder:text-orange-100/90 pl-6 pr-12 rounded-full shadow-lg transition-all duration-300 w-80 focus:outline-none focus:ring-2 focus:ring-orange-400/50 text-base"
+                  class="input bg-gradient-to-r from-error to-error/80 border-none text-white placeholder:text-orange-100/90 pl-5 pr-11 rounded-full shadow-lg transition-all duration-300 w-64 lg:w-80 focus:outline-none focus:ring-2 focus:ring-orange-400/50 text-sm sm:text-base"
                   @keyup.enter="handleSearch"
                   @blur="handleSearchBlur"
                   autofocus
                 />
                 <button 
                   @click="toggleSearch"
-                  class="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-8 h-8 min-h-0"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-7 h-7 min-h-0"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X :size="16" />
                 </button>
               </div>
             </div>
           </div>
 
           <!-- Acciones (Usuario y Carrito) -->
-          <div class="flex items-center gap-2 shrink-0 animate-fadeInUp delay-200">
+          <div class="flex items-center gap-1 sm:gap-2 shrink-0 animate-fadeInUp delay-200">
             <!-- Botón Usuario -->
             <div v-if="currentUser" class="dropdown dropdown-end">
               <div 
                 tabindex="0" 
                 role="button" 
-                class="btn btn-ghost btn-circle hover:bg-primary/20 hover:shadow-glow-primary transition-all duration-300 hover:scale-110"
+                class="btn btn-ghost btn-circle hover:bg-primary/20 hover:shadow-glow-primary transition-all duration-300 hover:scale-110 w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 min-h-0"
+                @click="handleUserDropdownToggle"
               >
-                <User :size="24" class="text-white hover:text-primary transition-colors" />
+                <User :size="18" class="sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white hover:text-primary transition-colors" />
               </div>
               <ul
+                ref="userDropdownRef"
                 tabindex="0"
-                class="mt-3 z-100 p-2 shadow-lg menu menu-sm dropdown-content glass-effect rounded-lg w-60 border border-white/10 animate-scaleIn"
+                class="mt-3 z-[9999] p-2 shadow-lg menu menu-sm dropdown-content glass-effect rounded-lg w-56 sm:w-60 border border-white/10 animate-scaleIn fixed lg:absolute"
               >
                 <!-- Información del usuario -->
                 <li class="menu-title">
                   <div class="flex flex-col gap-1 py-2">
-                    <span class="text-xs font-semibold text-base-content/90">{{ currentUser.email }}</span>
+                    <span class="text-xs font-semibold text-base-content/90 break-all">{{ currentUser.email }}</span>
                     <span v-if="currentUserData" class="text-xs badge badge-sm" :class="isAdmin ? 'badge-error' : hasEmployeeAccess ? 'badge-warning' : 'badge-ghost'">
                       {{ isAdmin ? 'Administrador' : hasEmployeeAccess ? 'Empleado' : 'Cliente' }}
                     </span>
@@ -254,8 +369,8 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                 </li>
               </ul>
             </div>
-            <button v-else @click="irALogin" class="btn btn-ghost btn-circle hover:bg-primary/20 hover:shadow-glow-primary transition-all duration-300 hover:scale-110">
-              <User :size="24" class="text-white hover:text-primary transition-colors" />
+            <button v-else @click="irALogin" class="btn btn-ghost btn-circle hover:bg-primary/20 hover:shadow-glow-primary transition-all duration-300 hover:scale-110 w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 min-h-0">
+              <User :size="18" class="sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white hover:text-primary transition-colors" />
             </button>
 
             <!-- Botón Carrito con dropdown -->
@@ -263,23 +378,24 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
               <div 
                 tabindex="0" 
                 role="button" 
-                class="btn btn-ghost btn-circle hover:bg-error/20 hover:shadow-glow transition-all duration-300 hover:scale-110 group"
+                class="btn btn-ghost btn-circle hover:bg-error/20 hover:shadow-glow transition-all duration-300 hover:scale-110 group w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 min-h-0"
                 @click="openCart"
               >
-                <ShoppingCart :size="24" class="text-white group-hover:text-error transition-colors" />
+                <ShoppingCart :size="18" class="sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white group-hover:text-error transition-colors" />
               </div>
               <!-- Badge circular con animación - Fuera del botón -->
               <span 
                 v-if="cartStore.totalItems > 0" 
-                class="absolute -top-2 -right-2 flex items-center justify-center min-w-[22px] h-6 px-1.5 bg-error text-white text-xs font-bold rounded-full shadow-lg animate-pulse border-2 border-base-100 z-30"
+                class="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 flex items-center justify-center min-w-[18px] sm:min-w-[22px] h-5 sm:h-6 px-1 sm:px-1.5 bg-error text-white text-[10px] sm:text-xs font-bold rounded-full shadow-lg animate-pulse border-2 border-base-100 z-30"
               >
                 {{ cartStore.totalItems > 99 ? '99+' : cartStore.totalItems }}
               </span>
               
               <!-- Dropdown del carrito -->
               <div
+                ref="cartDropdownRef"
                 tabindex="0"
-                class="mt-3 z-1 card card-compact dropdown-content w-80 shadow-xl border border-white/10 animate-fadeInUp bg-base-100"
+                class="mt-3 z-[9999] card card-compact dropdown-content w-[calc(100vw-2rem)] sm:w-80 shadow-xl border border-white/10 animate-fadeInUp bg-base-100 fixed lg:absolute"
               >
                 <div class="card-body">
                   <div class="flex items-center justify-between mb-2">
@@ -287,7 +403,7 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                     <span class="badge badge-error text-white">{{ cartStore.totalItems }} items</span>
                   </div>
                   
-                  <div v-if="!cartStore.isEmpty" class="space-y-2 max-h-64 overflow-y-auto">
+                  <div v-if="!cartStore.isEmpty" class="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
                     <div 
                       v-for="item in cartStore.items" 
                       :key="item.id"
@@ -297,11 +413,11 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                         v-if="item.foto" 
                         :src="item.foto" 
                         :alt="item.nombre"
-                        class="w-12 h-12 object-cover rounded"
+                        class="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded shrink-0"
                       />
                       <div class="flex-1 min-w-0">
-                        <p class="text-sm font-semibold truncate">{{ item.nombre }}</p>
-                        <p class="text-xs text-base-content/60">
+                        <p class="text-xs sm:text-sm font-semibold truncate">{{ item.nombre }}</p>
+                        <p class="text-[10px] sm:text-xs text-base-content/60">
                           {{ item.quantity }}x {{ formatearPrecio(getItemPrice(item)) }}
                           <span v-if="item.descuento && item.descuento > 0" class="text-error ml-1">
                             (-{{ item.descuento }}%)
@@ -310,11 +426,9 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                       </div>
                       <button 
                         @click="cartStore.removeFromCart(item.id)"
-                        class="btn btn-ghost btn-xs btn-circle"
+                        class="btn btn-ghost btn-xs btn-circle shrink-0"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+                        <X :size="14" />
                       </button>
                     </div>
                   </div>
@@ -326,26 +440,195 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                   
                   <div v-if="!cartStore.isEmpty" class="border-t border-base-300 pt-3 mt-2">
                     <div class="flex justify-between items-center mb-3">
-                      <span class="font-semibold">Total:</span>
-                      <span class="text-xl font-bold text-error">{{ formatearPrecio(cartStore.totalPrice) }}</span>
+                      <span class="text-sm sm:text-base font-semibold">Total:</span>
+                      <span class="text-lg sm:text-xl font-bold text-error">{{ formatearPrecio(cartStore.totalPrice) }}</span>
                     </div>
                     <div class="card-actions">
                       <button 
                         @click="handleQuickCheckout"
-                        class="btn btn-error btn-block text-white gap-2"
+                        class="btn btn-error btn-block text-white gap-2 text-xs sm:text-sm"
                       >
-                        <Send :size="20" />
-                        Pedir por WhatsApp
+                        <Send :size="16" class="sm:w-5 sm:h-5" />
+                        <span class="hidden sm:inline">Pedir por WhatsApp</span>
+                        <span class="sm:hidden">WhatsApp</span>
                       </button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+
+            <!-- Botón Menú Móvil -->
+            <button 
+              @click="toggleMobileMenu"
+              class="lg:hidden btn btn-ghost btn-circle hover:bg-primary/20 hover:shadow-glow-primary transition-all duration-300 hover:scale-110 w-9 h-9 sm:w-10 sm:h-10 min-h-0"
+            >
+              <Menu v-if="!isMobileMenuOpen" :size="20" class="text-white" />
+              <X v-else :size="20" class="text-white" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Menú Móvil Expandible -->
+        <div 
+          v-if="isMobileMenuOpen"
+          class="lg:hidden border-t border-white/10 pt-4 pb-3 animate-fadeInDown"
+        >
+          <!-- Buscador Móvil -->
+          <div class="mb-4">
+            <div class="relative">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Buscar juegos..."
+                class="input w-full bg-gradient-to-r from-error/90 to-error/70 border-none text-white placeholder:text-orange-100/90 pl-4 pr-10 rounded-full shadow-lg text-sm"
+                @keyup.enter="handleSearch"
+              />
+              <button 
+                @click="handleSearch"
+                class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
+              >
+                <Search :size="16" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Filtros de Plataformas Móvil -->
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            <button
+              v-for="platform in platforms"
+              :key="platform.id"
+              @click="handlePlatformChange(platform.id)"
+              :class="[
+                'flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all duration-300 text-sm',
+                selectedPlatform === platform.id
+                  ? 'text-white bg-error/20 border border-error/50 shadow-glow'
+                  : 'text-base-content/70 hover:text-white hover:bg-white/5 border border-transparent'
+              ]"
+            >
+              <Gamepad2 :size="16" class="shrink-0" />
+              <span>{{ platform.label }}</span>
+            </button>
           </div>
         </div>
       </div>
-    </div>
+    </nav>
   </header>
 </template>
+
+<style scoped>
+/* Efecto Glass mejorado para el navbar */
+.navbar-glass {
+  background: linear-gradient(
+    135deg,
+    rgba(17, 24, 39, 0.75) 0%,
+    rgba(31, 41, 55, 0.65) 50%,
+    rgba(17, 24, 39, 0.75) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.37),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 0 40px rgba(220, 38, 38, 0.1);
+  position: relative;
+  overflow: visible;
+}
+
+.navbar-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.navbar-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  animation: shimmer-navbar 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer-navbar {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Scrollbar personalizado */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(220, 38, 38, 0.5);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(220, 38, 38, 0.7);
+}
+
+/* Mejora del efecto glass en dropdowns */
+:deep(.glass-effect) {
+  background: linear-gradient(
+    135deg,
+    rgba(17, 24, 39, 0.9) 0%,
+    rgba(31, 41, 55, 0.85) 100%
+  );
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+/* Posicionamiento de dropdowns en móvil */
+@media (max-width: 1023px) {
+  .dropdown.dropdown-end .dropdown-content {
+    position: fixed !important;
+    left: auto !important;
+    transform: none !important;
+    margin-top: 0 !important;
+  }
+  
+  /* Asegurar que los dropdowns aparezcan sobre el navbar */
+  .dropdown.dropdown-end .dropdown-content {
+    z-index: 9999 !important;
+  }
+  
+  /* Dropdown del carrito en móvil - ajustar ancho */
+  .dropdown.dropdown-end .dropdown-content.card {
+    max-width: calc(100vw - 2rem);
+    min-width: 280px;
+  }
+}
+</style>
 
