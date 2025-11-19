@@ -357,32 +357,6 @@ const verDetallesJuego = (juego: GameSummary): void => {
             </div>
           </div>
 
-          <!-- Búsqueda por Teléfono -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text font-semibold">Buscar por Teléfono</span>
-            </label>
-            <div class="relative">
-              <input 
-                v-model="telefonoBusqueda" 
-                type="text" 
-                placeholder="+593 99 358 6097..." 
-                class="input input-bordered w-full pl-10"
-                @keyup.enter="buscarTelefono"
-                autocomplete="off"
-              />
-              <Phone :size="20" class="absolute left-3 top-3 text-base-content/40" />
-            </div>
-            <button 
-              v-if="telefonoBusqueda && telefonoBusqueda.trim().length >= 3"
-              @click="buscarTelefono" 
-              class="btn btn-sm btn-primary btn-block mt-2"
-              :disabled="isLoadingTelefono"
-            >
-              {{ isLoadingTelefono ? 'Buscando...' : 'Buscar' }}
-            </button>
-          </div>
-
           <!-- Filtro Plataforma -->
           <div class="form-control">
             <label class="label">
