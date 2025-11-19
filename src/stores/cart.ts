@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { GameSummary } from '@/types/game'
 
@@ -6,8 +6,32 @@ export interface CartItem extends GameSummary {
   quantity: number
 }
 
+const CART_STORAGE_KEY = 'zona_gamer_cart'
+
+// Funciones de localStorage
+const loadCartFromStorage = (): CartItem[] => {
+  try {
+    const stored = localStorage.getItem(CART_STORAGE_KEY)
+    if (stored) {
+      return JSON.parse(stored) as CartItem[]
+    }
+  } catch (error) {
+    console.error('Error cargando carrito desde localStorage:', error)
+  }
+  return []
+}
+
+const saveCartToStorage = (cartItems: CartItem[]): void => {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems))
+  } catch (error) {
+    console.error('Error guardando carrito en localStorage:', error)
+  }
+}
+
 export const useCartStore = defineStore('cart', () => {
-  const items = ref<CartItem[]>([])
+  // Cargar carrito desde localStorage al inicializar
+  const items = ref<CartItem[]>(loadCartFromStorage())
 
   // Computed
   const totalItems = computed(() => {
@@ -25,6 +49,15 @@ export const useCartStore = defineStore('cart', () => {
   })
 
   const isEmpty = computed(() => items.value.length === 0)
+
+  // Watcher para guardar automáticamente en localStorage cuando cambie el carrito
+  watch(
+    items,
+    (newItems) => {
+      saveCartToStorage(newItems)
+    },
+    { deep: true }
+  )
 
   // Actions
   const addToCart = (game: GameSummary, quantity: number = 1): void => {
@@ -62,6 +95,7 @@ export const useCartStore = defineStore('cart', () => {
 
   const clearCart = (): void => {
     items.value = []
+    // El watcher se encargará de limpiar localStorage automáticamente
   }
 
   const isInCart = (gameId: string): boolean => {
