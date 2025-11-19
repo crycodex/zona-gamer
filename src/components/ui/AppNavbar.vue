@@ -162,6 +162,11 @@ const handleSearch = (): void => {
   emit('search', searchQuery.value)
 }
 
+// Búsqueda en tiempo real mientras escribe
+const handleSearchInput = (): void => {
+  emit('search', searchQuery.value)
+}
+
 const toggleSearch = (): void => {
   isSearchExpanded.value = !isSearchExpanded.value
   if (!isSearchExpanded.value) {
@@ -171,12 +176,18 @@ const toggleSearch = (): void => {
 }
 
 const handleSearchBlur = (): void => {
-  // Cerrar el buscador si está vacío
+  // No cerrar el buscador automáticamente si hay texto
+  // Permitir que el usuario vea los resultados
   if (!searchQuery.value) {
     setTimeout(() => {
       isSearchExpanded.value = false
     }, 200)
   }
+}
+
+const clearSearch = (): void => {
+  searchQuery.value = ''
+  emit('search', '')
 }
 
 const getItemPrice = (item: typeof cartStore.items[0]): number => {
@@ -357,13 +368,23 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                   type="text"
                   placeholder="Minecraft, RPG, multijugador..."
                   class="input bg-gradient-to-r from-error to-error/80 border-none text-white placeholder:text-orange-100/90 pl-5 pr-11 rounded-full shadow-lg transition-all duration-300 w-64 lg:w-80 focus:outline-none focus:ring-2 focus:ring-orange-400/50 text-sm sm:text-base"
+                  @input="handleSearchInput"
                   @keyup.enter="handleSearch"
                   @blur="handleSearchBlur"
                   autofocus
                 />
                 <button 
+                  v-if="searchQuery"
+                  @click="clearSearch"
+                  class="absolute right-9 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-6 h-6 min-h-0"
+                  title="Limpiar búsqueda"
+                >
+                  <X :size="14" />
+                </button>
+                <button 
                   @click="toggleSearch"
                   class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-7 h-7 min-h-0"
+                  title="Cerrar búsqueda"
                 >
                   <X :size="16" />
                 </button>
@@ -587,12 +608,22 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                 v-model="searchQuery"
                 type="text"
                 placeholder="Buscar juegos..."
-                class="input w-full bg-gradient-to-r from-error/90 to-error/70 border-none text-white placeholder:text-orange-100/90 pl-4 pr-10 rounded-full shadow-lg text-sm"
+                class="input w-full bg-gradient-to-r from-error/90 to-error/70 border-none text-white placeholder:text-orange-100/90 pl-4 pr-20 rounded-full shadow-lg text-sm"
+                @input="handleSearchInput"
                 @keyup.enter="handleSearch"
               />
               <button 
+                v-if="searchQuery"
+                @click="clearSearch"
+                class="absolute right-10 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
+                title="Limpiar"
+              >
+                <X :size="14" />
+              </button>
+              <button 
                 @click="handleSearch"
                 class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
+                title="Buscar"
               >
                 <Search :size="16" />
               </button>

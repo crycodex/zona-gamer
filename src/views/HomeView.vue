@@ -235,6 +235,57 @@ onMounted(() => {
       </div>
 
       <template v-else>
+        <!-- Indicador de filtros activos -->
+        <div v-if="searchTerm || filtroPlataforma !== 'PS4 & PS5'" class="mb-8 animate-fadeInUp">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="text-sm text-base-content/70 font-medium">Filtros activos:</span>
+            
+            <!-- Filtro de búsqueda -->
+            <div v-if="searchTerm" class="badge badge-error gap-2 py-3 px-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <span>Búsqueda: "{{ searchTerm }}"</span>
+              <button @click="searchTerm = ''" class="hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <!-- Filtro de plataforma -->
+            <div v-if="filtroPlataforma !== 'PS4 & PS5'" class="badge badge-primary gap-2 py-3 px-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>Plataforma: {{ filtroPlataforma }}</span>
+              <button @click="handlePlataformaChange('PS4 & PS5')" class="hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <!-- Botón para limpiar todos los filtros -->
+            <button 
+              v-if="searchTerm || filtroPlataforma !== 'PS4 & PS5'"
+              @click="() => { searchTerm = ''; handlePlataformaChange('PS4 & PS5') }"
+              class="btn btn-ghost btn-sm gap-2 hover:bg-error/20 hover:text-error"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Limpiar todos
+            </button>
+            
+            <!-- Contador de resultados -->
+            <div class="ml-auto badge badge-ghost py-3 px-4">
+              <span class="font-bold">{{ juegosFiltrados.length }}</span>
+              <span class="ml-1">{{ juegosFiltrados.length === 1 ? 'juego encontrado' : 'juegos encontrados' }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Resultados de búsqueda (solo cuando hay búsqueda) -->
         <SearchResultsSection 
           v-if="searchTerm"
@@ -250,6 +301,7 @@ onMounted(() => {
         <template v-if="!searchTerm">
           <!-- SECCIÓN 1: OFERTAS ESPECIALES (Parte Superior) -->
           <OffersSection 
+            v-if="juegosEnOferta.length > 0"
             :games="juegosEnOferta"
             title="Ofertas Especiales"
             subtitle="¡Aprovecha estos precios increíbles antes de que terminen!"
@@ -258,6 +310,7 @@ onMounted(() => {
 
           <!-- SECCIÓN 2: PROMOCIONES DESTACADAS -->
           <PromotionsSection 
+            v-if="juegosEnPromocion.length > 0"
             :games="juegosEnPromocion"
             title="Promociones Destacadas"
             subtitle="Los mejores juegos seleccionados para ti"
@@ -269,11 +322,11 @@ onMounted(() => {
             :games="juegosDestacados" 
           />
 
-          <!-- Sección de Combos -->
-          <ComboSection />
+          <!-- Sección de Combos (solo cuando se muestran todas las plataformas) -->
+          <ComboSection v-if="filtroPlataforma === 'PS4 & PS5'" />
 
-          <!-- Banner de Características -->
-          <FeaturesBanner />
+          <!-- Banner de Características (solo cuando se muestran todas las plataformas) -->
+          <FeaturesBanner v-if="filtroPlataforma === 'PS4 & PS5'" />
 
           <!-- Todos los Juegos -->
           <AllGamesSection
@@ -285,51 +338,54 @@ onMounted(() => {
             @prev="handleAllGamesPrev"
           />
 
-          <!-- Separador decorativo -->
-          <div class="relative my-16 animate-fadeInUp">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-white/10"></div>
+          <!-- Secciones por plataforma (solo cuando se muestran todas las plataformas) -->
+          <template v-if="filtroPlataforma === 'PS4 & PS5'">
+            <!-- Separador decorativo -->
+            <div class="relative my-16 animate-fadeInUp">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-white/10"></div>
+              </div>
+              <div class="relative flex justify-center">
+                <span class="px-6 py-2 bg-base-200 text-sm font-semibold glass-effect rounded-full border border-white/10">
+                  Por Plataforma
+                </span>
+              </div>
             </div>
-            <div class="relative flex justify-center">
-              <span class="px-6 py-2 bg-base-200 text-sm font-semibold glass-effect rounded-full border border-white/10">
-                Por Plataforma
-              </span>
+
+            <!-- Juegos PS4 -->
+            <div id="seccion-ps4">
+              <PlatformGamesSection
+                :games="juegosPS4"
+                platform-name="PS4"
+                platform-title="PlayStation 4"
+                platform-description="Títulos destacados para tu PS4"
+                :items-per-page="itemsPerPage"
+                @view-more="handleViewMorePS4"
+              />
             </div>
-          </div>
 
-          <!-- Juegos PS4 -->
-          <div id="seccion-ps4">
-            <PlatformGamesSection
-              :games="juegosPS4"
-              platform-name="PS4"
-              platform-title="PlayStation 4"
-              platform-description="Títulos destacados para tu PS4"
-              :items-per-page="itemsPerPage"
-              @view-more="handleViewMorePS4"
-            />
-          </div>
-
-          <!-- Separador decorativo -->
-          <div class="relative my-16 animate-fadeInUp">
-            <div class="absolute inset-0 flex items-center">
-              <div class="w-full border-t border-white/10"></div>
+            <!-- Separador decorativo -->
+            <div class="relative my-16 animate-fadeInUp">
+              <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-white/10"></div>
+              </div>
             </div>
-          </div>
 
-          <!-- Juegos PS5 -->
-          <div id="seccion-ps5">
-            <PlatformGamesSection
-              :games="juegosPS5"
-              platform-name="PS5"
-              platform-title="PlayStation 5"
-              platform-description="Títulos destacados para tu PS5"
-              :items-per-page="itemsPerPage"
-              @view-more="handleViewMorePS5"
-            />
-          </div>
+            <!-- Juegos PS5 -->
+            <div id="seccion-ps5">
+              <PlatformGamesSection
+                :games="juegosPS5"
+                platform-name="PS5"
+                platform-title="PlayStation 5"
+                platform-description="Títulos destacados para tu PS5"
+                :items-per-page="itemsPerPage"
+                @view-more="handleViewMorePS5"
+              />
+            </div>
+          </template>
 
           <!-- Separador decorativo especial para ofertas finales -->
-          <div class="relative my-20 animate-fadeInUp">
+          <div v-if="todasLasOfertas.length > 0" class="relative my-20 animate-fadeInUp">
             <div class="absolute inset-0 flex items-center">
               <div class="w-full border-t-2 border-error/20"></div>
             </div>
