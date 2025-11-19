@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useRoles } from '@/composables/useRoles'
 import { useCartStore } from '@/stores/cart'
-import { Search, ShoppingCart, User, Send, Gamepad2, LayoutDashboard, Menu, X } from 'lucide-vue-next'
+import { Search, ShoppingCart, User, Send, Gamepad2, LayoutDashboard, Menu, X, Trash2, Plus, Minus } from 'lucide-vue-next'
 import type { GamePlatform } from '@/types/game'
 import logo from '/Images/logo/logo.png'
 
@@ -19,6 +19,9 @@ const isSearchExpanded = ref(false)
 const isMobileMenuOpen = ref(false)
 const userDropdownRef = ref<HTMLElement | null>(null)
 const cartDropdownRef = ref<HTMLElement | null>(null)
+const showClearCartConfirm = ref(false)
+const itemToDelete = ref<string | null>(null)
+const showDeleteConfirm = ref(false)
 
 const emit = defineEmits<{
   openCart: []
@@ -242,6 +245,54 @@ const formatearPrecio = (precio: number): string => {
   }).format(precio)
 }
 
+const incrementCartQuantity = (gameId: string, currentQuantity: number): void => {
+  cartStore.updateQuantity(gameId, currentQuantity + 1)
+}
+
+const decrementCartQuantity = (gameId: string, currentQuantity: number): void => {
+  if (currentQuantity > 1) {
+    cartStore.updateQuantity(gameId, currentQuantity - 1)
+  } else {
+    iniciarEliminacionItem(gameId)
+  }
+}
+
+const iniciarEliminacionItem = (gameId: string): void => {
+  itemToDelete.value = gameId
+  showDeleteConfirm.value = true
+}
+
+const confirmarEliminacionItem = (): void => {
+  if (itemToDelete.value) {
+    cartStore.removeFromCart(itemToDelete.value)
+    itemToDelete.value = null
+    showDeleteConfirm.value = false
+  }
+}
+
+const cancelarEliminacionItem = (): void => {
+  itemToDelete.value = null
+  showDeleteConfirm.value = false
+}
+
+const iniciarVaciarCarrito = (): void => {
+  showClearCartConfirm.value = true
+}
+
+const confirmarVaciarCarrito = (): void => {
+  cartStore.clearCart()
+  showClearCartConfirm.value = false
+}
+
+const cancelarVaciarCarrito = (): void => {
+  showClearCartConfirm.value = false
+}
+
+const getItemName = (gameId: string): string => {
+  const item = cartStore.items.find(i => i.id === gameId)
+  return item?.nombre || 'este juego'
+}
+
 const platforms: { id: GamePlatform; label: string; icon: string }[] = [
   { id: 'PS4 & PS5', label: 'Todos', icon: 'ALL' },
   { id: 'PS4', label: 'PS4', icon: 'PS4' },
@@ -403,33 +454,72 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                     <span class="badge badge-error text-white">{{ cartStore.totalItems }} items</span>
                   </div>
                   
-                  <div v-if="!cartStore.isEmpty" class="space-y-2 max-h-64 overflow-y-auto custom-scrollbar">
+                  <div v-if="!cartStore.isEmpty" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
                     <div 
                       v-for="item in cartStore.items" 
                       :key="item.id"
-                      class="flex items-center gap-2 p-2 bg-base-200 rounded-lg"
+                      class="flex flex-col gap-2 p-3 bg-base-200 rounded-lg border border-base-300 hover:border-error/30 transition-all"
                     >
-                      <img 
-                        v-if="item.foto" 
-                        :src="item.foto" 
-                        :alt="item.nombre"
-                        class="w-10 h-10 sm:w-12 sm:h-12 object-cover rounded shrink-0"
-                      />
-                      <div class="flex-1 min-w-0">
-                        <p class="text-xs sm:text-sm font-semibold truncate">{{ item.nombre }}</p>
-                        <p class="text-[10px] sm:text-xs text-base-content/60">
-                          {{ item.quantity }}x {{ formatearPrecio(getItemPrice(item)) }}
-                          <span v-if="item.descuento && item.descuento > 0" class="text-error ml-1">
-                            (-{{ item.descuento }}%)
-                          </span>
-                        </p>
+                      <!-- Información principal del item -->
+                      <div class="flex items-start gap-3">
+                        <img 
+                          v-if="item.foto" 
+                          :src="item.foto" 
+                          :alt="item.nombre"
+                          class="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-lg shrink-0"
+                        />
+                        <div v-else class="w-16 h-20 sm:w-20 sm:h-24 bg-base-300 rounded-lg flex items-center justify-center shrink-0">
+                          <Gamepad2 :size="24" class="text-base-content/30" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm sm:text-base font-semibold text-white mb-1 line-clamp-2">{{ item.nombre }}</p>
+                          <p class="text-xs text-base-content/60 mb-2">{{ item.version }}</p>
+                          <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm font-bold text-error">
+                              {{ formatearPrecio(getItemPrice(item) * item.quantity) }}
+                            </span>
+                            <span class="text-xs text-base-content/60">
+                              ({{ formatearPrecio(getItemPrice(item)) }} c/u)
+                            </span>
+                            <span v-if="item.descuento && item.descuento > 0" class="badge badge-error badge-sm">
+                              -{{ item.descuento }}%
+                            </span>
+                          </div>
+                          <p class="text-xs text-base-content/50">
+                            {{ item.totalCorreos || 0 }} disponibles
+                          </p>
+                        </div>
+                        <button 
+                          @click="iniciarEliminacionItem(item.id)"
+                          class="btn btn-ghost btn-xs btn-circle shrink-0 hover:bg-error/20 hover:text-error transition-all"
+                          title="Eliminar del carrito"
+                        >
+                          <Trash2 :size="14" />
+                        </button>
                       </div>
-                      <button 
-                        @click="cartStore.removeFromCart(item.id)"
-                        class="btn btn-ghost btn-xs btn-circle shrink-0"
-                      >
-                        <X :size="14" />
-                      </button>
+                      
+                      <!-- Controles de cantidad -->
+                      <div class="flex items-center justify-between pt-2 border-t border-base-300">
+                        <span class="text-xs text-base-content/70 font-medium">Cantidad:</span>
+                        <div class="flex items-center gap-2">
+                          <button 
+                            @click.stop="decrementCartQuantity(item.id, item.quantity)"
+                            class="btn btn-xs btn-circle h-6 w-6 min-h-0 p-0 hover:bg-error hover:text-white transition-all"
+                            :disabled="item.quantity <= 0"
+                            title="Disminuir cantidad"
+                          >
+                            <Minus :size="12" />
+                          </button>
+                          <span class="text-sm font-bold min-w-[2rem] text-center">{{ item.quantity }}</span>
+                          <button 
+                            @click.stop="incrementCartQuantity(item.id, item.quantity)"
+                            class="btn btn-xs btn-circle h-6 w-6 min-h-0 p-0 hover:bg-success hover:text-white transition-all"
+                            title="Aumentar cantidad"
+                          >
+                            <Plus :size="12" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
@@ -438,12 +528,21 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                     <p class="text-sm text-base-content/60">Tu carrito está vacío</p>
                   </div>
                   
-                  <div v-if="!cartStore.isEmpty" class="border-t border-base-300 pt-3 mt-2">
-                    <div class="flex justify-between items-center mb-3">
-                      <span class="text-sm sm:text-base font-semibold">Total:</span>
-                      <span class="text-lg sm:text-xl font-bold text-error">{{ formatearPrecio(cartStore.totalPrice) }}</span>
+                  <div v-if="!cartStore.isEmpty" class="border-t border-base-300 pt-4 mt-3 space-y-3">
+                    <!-- Resumen de totales -->
+                    <div class="space-y-2">
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs text-base-content/70">Items:</span>
+                        <span class="badge badge-error text-white font-bold">{{ cartStore.totalItems }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-sm sm:text-base font-semibold">Total:</span>
+                        <span class="text-lg sm:text-xl font-bold text-error">{{ formatearPrecio(cartStore.totalPrice) }}</span>
+                      </div>
                     </div>
-                    <div class="card-actions">
+                    
+                    <!-- Botones de acción -->
+                    <div class="card-actions flex-col gap-2">
                       <button 
                         @click="handleQuickCheckout"
                         class="btn btn-error btn-block text-white gap-2 text-xs sm:text-sm"
@@ -451,6 +550,13 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                         <Send :size="16" class="sm:w-5 sm:h-5" />
                         <span class="hidden sm:inline">Pedir por WhatsApp</span>
                         <span class="sm:hidden">WhatsApp</span>
+                      </button>
+                      <button 
+                        @click="iniciarVaciarCarrito"
+                        class="btn btn-outline btn-error btn-block btn-sm gap-2 text-xs"
+                      >
+                        <Trash2 :size="14" />
+                        Vaciar Carrito
                       </button>
                     </div>
                   </div>
@@ -514,6 +620,48 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
       </div>
     </nav>
   </header>
+
+  <!-- Modal de confirmación para eliminar item del carrito -->
+  <dialog :class="['modal', { 'modal-open': showDeleteConfirm }]">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">¿Eliminar juego del carrito?</h3>
+      <p class="mb-6">
+        ¿Estás seguro de que deseas eliminar <strong>{{ itemToDelete ? getItemName(itemToDelete) : 'este juego' }}</strong> del carrito?
+      </p>
+      <div class="modal-action">
+        <button @click="cancelarEliminacionItem" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button @click="confirmarEliminacionItem" class="btn btn-error">
+          Sí, eliminar
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button @click="cancelarEliminacionItem">close</button>
+    </form>
+  </dialog>
+
+  <!-- Modal de confirmación para vaciar carrito -->
+  <dialog :class="['modal', { 'modal-open': showClearCartConfirm }]">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">¿Vaciar todo el carrito?</h3>
+      <p class="mb-6">
+        ¿Estás seguro de que deseas eliminar todos los juegos del carrito? Esta acción no se puede deshacer.
+      </p>
+      <div class="modal-action">
+        <button @click="cancelarVaciarCarrito" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button @click="confirmarVaciarCarrito" class="btn btn-error">
+          Sí, vaciar carrito
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button @click="cancelarVaciarCarrito">close</button>
+    </form>
+  </dialog>
 </template>
 
 <style scoped>
@@ -629,6 +777,14 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
     max-width: calc(100vw - 2rem);
     min-width: 280px;
   }
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
 

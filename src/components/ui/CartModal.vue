@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useCartStore } from '@/stores/cart'
-import { Send } from 'lucide-vue-next'
+import { Send, Trash2 } from 'lucide-vue-next'
 
 interface Props {
   open: boolean
@@ -16,6 +16,11 @@ const emit = defineEmits<{
 
 const cartStore = useCartStore()
 
+// Estados para confirmaciones
+const showDeleteConfirm = ref(false)
+const itemToDelete = ref<string | null>(null)
+const showClearCartConfirm = ref(false)
+
 const formatearPrecio = (precio: number): string => {
   return new Intl.NumberFormat('es-US', {
     style: 'currency',
@@ -25,18 +30,58 @@ const formatearPrecio = (precio: number): string => {
 
 const handleClose = (): void => {
   emit('close')
+  // Limpiar estados de confirmación al cerrar
+  showDeleteConfirm.value = false
+  showClearCartConfirm.value = false
+  itemToDelete.value = null
 }
 
 const handleCheckout = (): void => {
   emit('checkout')
 }
 
-const updateQuantity = (gameId: string, newQuantity: number): void => {
-  if (newQuantity <= 0) {
-    cartStore.removeFromCart(gameId)
+const incrementQuantity = (gameId: string, currentQuantity: number): void => {
+  cartStore.updateQuantity(gameId, currentQuantity + 1)
+}
+
+const decrementQuantity = (gameId: string, currentQuantity: number): void => {
+  if (currentQuantity > 1) {
+    cartStore.updateQuantity(gameId, currentQuantity - 1)
   } else {
-    cartStore.updateQuantity(gameId, newQuantity)
+    // Si la cantidad es 1, mostrar confirmación para eliminar
+    iniciarEliminacion(gameId)
   }
+}
+
+const iniciarEliminacion = (gameId: string): void => {
+  itemToDelete.value = gameId
+  showDeleteConfirm.value = true
+}
+
+const confirmarEliminacion = (): void => {
+  if (itemToDelete.value) {
+    cartStore.removeFromCart(itemToDelete.value)
+    itemToDelete.value = null
+    showDeleteConfirm.value = false
+  }
+}
+
+const cancelarEliminacion = (): void => {
+  itemToDelete.value = null
+  showDeleteConfirm.value = false
+}
+
+const iniciarVaciarCarrito = (): void => {
+  showClearCartConfirm.value = true
+}
+
+const confirmarVaciarCarrito = (): void => {
+  cartStore.clearCart()
+  showClearCartConfirm.value = false
+}
+
+const cancelarVaciarCarrito = (): void => {
+  showClearCartConfirm.value = false
 }
 
 const getItemTotalPrice = (item: typeof cartStore.items[0]): number => {
@@ -44,6 +89,11 @@ const getItemTotalPrice = (item: typeof cartStore.items[0]): number => {
     return item.costo * (1 - item.descuento / 100)
   }
   return item.costo
+}
+
+const getItemName = (gameId: string): string => {
+  const item = cartStore.items.find(i => i.id === gameId)
+  return item?.nombre || 'este juego'
 }
 </script>
 
@@ -111,20 +161,24 @@ const getItemTotalPrice = (item: typeof cartStore.items[0]): number => {
                   <!-- Cantidad con mejor diseño -->
                   <div class="flex items-center gap-1 bg-base-300 rounded-full p-1">
                     <button 
-                      @click="updateQuantity(item.id, item.quantity - 1)"
+                      @click="decrementQuantity(item.id, item.quantity)"
                       class="btn btn-xs btn-circle hover:bg-error hover:text-white transition-all duration-300"
+                      :disabled="item.quantity <= 0"
+                      :aria-label="`Disminuir cantidad de ${item.nombre}`"
+                      title="Disminuir cantidad"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
                       </svg>
                     </button>
                     
-                    <span class="font-bold px-4 text-lg">{{ item.quantity }}</span>
+                    <span class="font-bold px-4 text-lg min-w-[3rem] text-center">{{ item.quantity }}</span>
                     
                     <button 
-                      @click="updateQuantity(item.id, item.quantity + 1)"
+                      @click="incrementQuantity(item.id, item.quantity)"
                       class="btn btn-xs btn-circle hover:bg-success hover:text-white transition-all duration-300"
-                      :disabled="item.quantity >= item.totalCorreos"
+                      :aria-label="`Aumentar cantidad de ${item.nombre}`"
+                      title="Aumentar cantidad"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -151,12 +205,12 @@ const getItemTotalPrice = (item: typeof cartStore.items[0]): number => {
 
               <!-- Eliminar con mejor diseño -->
               <button 
-                @click="cartStore.removeFromCart(item.id)"
+                @click="iniciarEliminacion(item.id)"
                 class="btn btn-ghost btn-sm btn-square self-start hover:bg-error/20 hover:text-error hover:rotate-12 transition-all duration-300"
+                :aria-label="`Eliminar ${item.nombre} del carrito`"
+                title="Eliminar del carrito"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+                <Trash2 :size="20" />
               </button>
             </div>
           </div>
@@ -212,24 +266,38 @@ const getItemTotalPrice = (item: typeof cartStore.items[0]): number => {
         </div>
 
         <!-- Botones de acción mejorados -->
-        <div class="flex gap-3">
+        <div class="flex flex-col gap-3">
+          <div class="flex gap-3">
+            <button 
+              @click="handleClose"
+              class="btn btn-ghost flex-1 hover:bg-white/5 transition-all duration-300"
+              aria-label="Cerrar carrito y seguir comprando"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Seguir Comprando
+            </button>
+            <button 
+              @click="handleCheckout"
+              class="btn btn-error text-white flex-1 gap-2 shadow-glow hover:shadow-glow relative overflow-hidden group"
+              aria-label="Realizar pedido por WhatsApp"
+            >
+              <!-- Efecto de ondas -->
+              <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
+              <Send :size="20" class="relative z-10" />
+              <span class="relative z-10">Pedir por WhatsApp</span>
+            </button>
+          </div>
+          
+          <!-- Botón para vaciar carrito -->
           <button 
-            @click="handleClose"
-            class="btn btn-ghost flex-1 hover:bg-white/5 transition-all duration-300"
+            @click="iniciarVaciarCarrito"
+            class="btn btn-outline btn-error btn-sm w-full gap-2 hover:bg-error/10"
+            aria-label="Vaciar todo el carrito"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Seguir Comprando
-          </button>
-          <button 
-            @click="handleCheckout"
-            class="btn btn-error text-white flex-1 gap-2 shadow-glow hover:shadow-glow relative overflow-hidden group"
-          >
-            <!-- Efecto de ondas -->
-            <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></span>
-            <Send :size="20" class="relative z-10" />
-            <span class="relative z-10">Pedir por WhatsApp</span>
+            <Trash2 :size="16" />
+            Vaciar Carrito
           </button>
         </div>
         
@@ -246,6 +314,48 @@ const getItemTotalPrice = (item: typeof cartStore.items[0]): number => {
     <!-- Backdrop mejorado -->
     <form method="dialog" class="modal-backdrop" style="background-color: rgba(0, 0, 0, 1) !important; backdrop-filter: none !important;">
       <button @click="handleClose">Cerrar</button>
+    </form>
+  </dialog>
+
+  <!-- Modal de confirmación para eliminar juego -->
+  <dialog :class="['modal', { 'modal-open': showDeleteConfirm }]">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">¿Eliminar juego del carrito?</h3>
+      <p class="mb-6">
+        ¿Estás seguro de que deseas eliminar <strong>{{ itemToDelete ? getItemName(itemToDelete) : 'este juego' }}</strong> del carrito?
+      </p>
+      <div class="modal-action">
+        <button @click="cancelarEliminacion" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button @click="confirmarEliminacion" class="btn btn-error">
+          Sí, eliminar
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button @click="cancelarEliminacion">close</button>
+    </form>
+  </dialog>
+
+  <!-- Modal de confirmación para vaciar carrito -->
+  <dialog :class="['modal', { 'modal-open': showClearCartConfirm }]">
+    <div class="modal-box">
+      <h3 class="font-bold text-lg mb-4">¿Vaciar todo el carrito?</h3>
+      <p class="mb-6">
+        ¿Estás seguro de que deseas eliminar todos los juegos del carrito? Esta acción no se puede deshacer.
+      </p>
+      <div class="modal-action">
+        <button @click="cancelarVaciarCarrito" class="btn btn-ghost">
+          Cancelar
+        </button>
+        <button @click="confirmarVaciarCarrito" class="btn btn-error">
+          Sí, vaciar carrito
+        </button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button @click="cancelarVaciarCarrito">close</button>
     </form>
   </dialog>
 </template>

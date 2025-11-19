@@ -64,10 +64,10 @@ export const useCartStore = defineStore('cart', () => {
     const existingItem = items.value.find(item => item.id === game.id)
     
     if (existingItem) {
-      // Si el juego ya está en el carrito, aumentar cantidad
+      // Si el juego ya está en el carrito, aumentar cantidad (sin límite)
       existingItem.quantity += quantity
     } else {
-      // Si es nuevo, agregarlo con la cantidad especificada
+      // Si es nuevo, agregarlo con la cantidad especificada (sin límite)
       items.value.push({
         ...game,
         quantity: quantity
@@ -88,6 +88,7 @@ export const useCartStore = defineStore('cart', () => {
       if (quantity <= 0) {
         removeFromCart(gameId)
       } else {
+        // Sin límite de cantidad
         item.quantity = quantity
       }
     }

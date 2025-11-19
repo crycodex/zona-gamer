@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { GameSummary } from '@/types/game'
 import { useCartStore } from '@/stores/cart'
 
@@ -32,48 +32,47 @@ const precioConDescuento = computed(() => {
 const isInCart = computed(() => cartStore.isInCart(props.game.id))
 const currentQuantity = computed(() => cartStore.getItemQuantity(props.game.id))
 
-// Sincronizar quantity con la cantidad del carrito cuando el juego está en el carrito
-const displayQuantity = computed(() => {
-  return isInCart.value ? currentQuantity.value : quantity.value
+// Resetear quantity a 1 cuando el juego sale del carrito
+watch(isInCart, (newValue, oldValue) => {
+  // Solo resetear cuando sale del carrito (de true a false)
+  if (oldValue === true && newValue === false) {
+    quantity.value = 1
+  }
 })
 
+// Incrementar cantidad en el selector (no modifica el carrito directamente)
 const incrementQuantity = (): void => {
-  const maxQuantity = props.game.totalCorreos || 99
-  
-  if (isInCart.value) {
-    // Si está en el carrito, actualizar directamente
-    const newQuantity = currentQuantity.value + 1
-    if (newQuantity <= maxQuantity) {
-      cartStore.updateQuantity(props.game.id, newQuantity)
-    }
-  } else {
-    // Si no está en el carrito, incrementar el selector local
-    if (quantity.value < maxQuantity) {
-      quantity.value++
-    }
+  // Sin límite máximo
+  quantity.value++
+}
+
+// Decrementar cantidad en el selector (no modifica el carrito directamente)
+const decrementQuantity = (): void => {
+  if (quantity.value > 1) {
+    quantity.value--
   }
 }
 
-const decrementQuantity = (): void => {
+// Computed para el texto del botón
+const buttonText = computed(() => {
   if (isInCart.value) {
-    // Si está en el carrito, disminuir o eliminar
-    const newQuantity = currentQuantity.value - 1
-    if (newQuantity <= 0) {
-      cartStore.removeFromCart(props.game.id)
-    } else {
-      cartStore.updateQuantity(props.game.id, newQuantity)
-    }
+    return quantity.value > 1 ? `Agregar ${quantity.value} más` : 'Agregar 1 más'
   } else {
-    // Si no está en el carrito, disminuir el selector local
-    if (quantity.value > 1) {
-      quantity.value--
-    }
+    return quantity.value > 1 ? `Agregar ${quantity.value}` : 'Agregar'
   }
-}
+})
 
 const handleAddToCart = (): void => {
-  cartStore.addToCart(props.game, quantity.value)
-  quantity.value = 1 // Resetear cantidad después de agregar
+  if (isInCart.value) {
+    // Si ya está en el carrito, agregar la cantidad seleccionada adicional
+    const nuevaCantidadTotal = currentQuantity.value + quantity.value
+    cartStore.updateQuantity(props.game.id, nuevaCantidadTotal)
+  } else {
+    // Si no está en el carrito, agregar con la cantidad seleccionada
+    cartStore.addToCart(props.game, quantity.value)
+  }
+  // Resetear a 1 después de agregar
+  quantity.value = 1
 }
 
 // Generar estrellas para rating
@@ -88,7 +87,7 @@ const stars = computed(() => {
 
 <template>
   <div 
-    class="card bg-base-100 shadow-lg hover:shadow-xl relative overflow-hidden group border border-white/5 transition-all duration-300 flex flex-col h-full aspect-[2/3]"
+    class="card bg-base-100 shadow-lg hover:shadow-xl relative overflow-hidden group border border-white/5 transition-all duration-300 flex flex-col h-full aspect-2/3"
   >
     <!-- Contenedor de imagen - Ocupa el 100% del espacio disponible -->
     <div class="relative flex-1 bg-base-300 overflow-hidden">
@@ -161,10 +160,18 @@ const stars = computed(() => {
         </p>
       </div>
 
+      <!-- Indicador de carrito -->
+      <div v-if="isInCart" class="flex items-center gap-1 text-[10px] text-success font-bold mb-1">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>{{ currentQuantity }} en carrito</span>
+      </div>
+
       <!-- Precio y cantidad -->
       <div class="flex items-center justify-between gap-2">
         <!-- Precio -->
-        <div class="flex items-center gap-1 flex-shrink-0">
+        <div class="flex items-center gap-1 shrink-0">
           <div class="text-sm font-bold text-white">
             {{ formatearPrecio(precioConDescuento) }}
           </div>
@@ -178,17 +185,20 @@ const stars = computed(() => {
           <button 
             @click="decrementQuantity"
             class="btn btn-xs btn-circle h-5 w-5 min-h-0 p-0 hover:bg-error hover:text-white transition-all"
-            :disabled="displayQuantity <= 1"
+            :disabled="quantity <= 1"
+            title="Disminuir cantidad"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
             </svg>
           </button>
-          <span class="text-xs font-bold px-2 min-w-[24px] text-center">{{ displayQuantity }}</span>
+          <span class="text-xs font-bold px-2 min-w-[24px] text-center">
+            {{ isInCart ? `+${quantity}` : quantity }}
+          </span>
           <button 
             @click="incrementQuantity"
             class="btn btn-xs btn-circle h-5 w-5 min-h-0 p-0 hover:bg-success hover:text-white transition-all"
-            :disabled="displayQuantity >= (game.totalCorreos || 99)"
+            title="Aumentar cantidad"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -207,15 +217,15 @@ const stars = computed(() => {
             ? 'bg-success hover:bg-success' 
             : 'btn-error'
         ]"
-        :disabled="false"
+        :title="isInCart ? `Agregar ${quantity} más al carrito (total: ${currentQuantity + quantity})` : `Agregar ${quantity} al carrito`"
       >
         <svg v-if="!isInCart" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
         <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
-        <span>{{ isInCart ? 'Agregar más' : 'Agregar' }}</span>
+        <span>{{ buttonText }}</span>
       </button>
     </div>
   </div>
