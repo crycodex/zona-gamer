@@ -8,11 +8,17 @@ import type { HistoryState } from 'vue-router'
 
 interface Props {
   readOnly?: boolean
+  onGameClick?: (juego: GameSummary) => void
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  readOnly: false
+  readOnly: false,
+  onGameClick: undefined
 })
+
+const emit = defineEmits<{
+  gameClick: [juego: GameSummary]
+}>()
 
 const router = useRouter()
 const { games, cargarJuegos, sincronizarJuegos, buscarPorTelefono, isSyncingGames } = useGames()
@@ -204,7 +210,17 @@ const toggleSortOrder = (): void => {
 }
 
 const verDetallesJuego = (juego: GameSummary): void => {
-  // Navegamos a /games pasando el juego completo como state
+  // Si hay un callback personalizado, usarlo (para AdminDashboard)
+  if (props.onGameClick) {
+    props.onGameClick(juego)
+    return
+  }
+  
+  // Si hay un listener de evento, emitirlo
+  emit('gameClick', juego)
+  
+  // Si no hay callback ni listener, navegar a /games (comportamiento por defecto)
+  // Solo navegar si no se pasó ningún callback ni se emitió evento
   router.push({
     path: '/games',
     state: {

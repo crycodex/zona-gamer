@@ -398,6 +398,30 @@ const verDetallesJuego = (juegoId: string): void => {
   }
 }
 
+const handleGameClickFromStats = async (juego: GameSummary): Promise<void> => {
+  // Cambiar al tab de juegos
+  activeTab.value = 'games'
+  
+  // Asegurarse de que los juegos estén cargados
+  if (games.value.length === 0) {
+    await cargarJuegosPorPlataforma()
+  }
+  
+  // Buscar el juego en la lista cargada
+  const juegoEncontrado = games.value.find(g => g.id === juego.id)
+  if (juegoEncontrado) {
+    // Pequeño delay para asegurar que el tab se haya cambiado
+    setTimeout(() => {
+      verCorreosJuego(juegoEncontrado)
+    }, 100)
+  } else {
+    // Si no se encuentra, usar el juego pasado directamente
+    setTimeout(() => {
+      verCorreosJuego(juego)
+    }, 100)
+  }
+}
+
 // ========== ESTADOS PARA GESTIÓN DE JUEGOS ==========
 const plataformaSeleccionada = ref<GamePlatform>('PS4 & PS5')
 const searchTerm = ref('')
@@ -1414,7 +1438,10 @@ onBeforeUnmount(() => {
     <div class="container mx-auto p-6">
       <!-- Tab: Estadísticas -->
       <div v-if="activeTab === 'stats'">
-        <StatsOverview :read-only="false" />
+        <StatsOverview 
+          :read-only="false" 
+          :on-game-click="handleGameClickFromStats"
+        />
       </div>
 
       <!-- Tab: Búsqueda por Teléfono -->
