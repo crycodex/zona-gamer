@@ -7,7 +7,6 @@ import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
 import AdminDashboard from '@/views/admin/AdminDashboard.vue'
 import EmployeeDashboard from '@/views/employee/EmployeeDashboard.vue'
-import GamesManager from '@/views/admin/GamesManager.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 
 const router = createRouter({
@@ -35,12 +34,6 @@ const router = createRouter({
       path: '/employee',
       name: 'employee',
       component: EmployeeDashboard,
-      meta: { requiresAuth: true, requiresRole: 'employee' },
-    },
-    {
-      path: '/games',
-      name: 'games',
-      component: GamesManager,
       meta: { requiresAuth: true, requiresRole: 'employee' },
     },
     {
