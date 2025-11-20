@@ -8,10 +8,13 @@ import { auth } from '@/config/firebase'
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import type { AppUser, UserRole } from '@/types/user'
-import { BarChart3, Users, Gamepad2, Home, Phone, Search, Mail, RefreshCw } from 'lucide-vue-next'
+import { BarChart3, Users, Gamepad2, Home, Phone, Search, Mail, RefreshCw, MessageCircle } from 'lucide-vue-next'
 import StatsOverview from '@/components/admin/StatsOverview.vue'
+import WhatsAppMessageModal from '@/components/ui/WhatsAppMessageModal.vue'
 import { useGames } from '@/composables/useGames'
+import { useWhatsAppMessages } from '@/composables/useWhatsAppMessages'
 import type { TelefonoSearchResult, CorreoSearchResult, GamePlatform, AccountOwner, GameSummary, GameEmailAccount, AccountType } from '@/types/game'
+import type { WhatsAppMessage } from '@/composables/useWhatsAppMessages'
 
 const router = useRouter()
 const { signOut } = useAuth()
@@ -36,6 +39,13 @@ const {
   generarIdJuego,
   clearCache
 } = useGames()
+
+const {
+  validarCodigosDisponibles,
+  generarYEliminarCodigos,
+  copiarAlPortapapeles,
+  isGenerating
+} = useWhatsAppMessages()
 
 // Estado para el tab activo
 const activeTab = ref<'stats' | 'users' | 'telefono' | 'correo' | 'games'>('stats')
@@ -489,6 +499,10 @@ const deleteGameSuccess = ref('')
 // Estados para ver detalles de un correo
 const showEmailDetails = ref(false)
 const selectedEmailDetails = ref<GameEmailAccount | null>(null)
+
+// Estados para WhatsApp
+const showWhatsAppModal = ref(false)
+const mensajeWhatsApp = ref<WhatsAppMessage | null>(null)
 
 // Estados para editar juego
 const showEditGame = ref(false)
@@ -1136,6 +1150,59 @@ const verDetallesCorreo = (email: GameEmailAccount): void => {
 const cerrarDetalles = (): void => {
   showEmailDetails.value = false
   selectedEmailDetails.value = null
+}
+
+const abrirModalWhatsApp = async (correo: GameEmailAccount, version?: 'PS4' | 'PS5'): Promise<void> => {
+  if (!validarCodigosDisponibles(correo)) {
+    alert('No hay suficientes códigos disponibles (se requieren al menos 2)')
+    return
+  }
+
+  if (!juegoSeleccionado.value) {
+    alert('Error: No se ha seleccionado un juego')
+    return
+  }
+
+  try {
+    const juegoId = generarIdJuego(juegoSeleccionado.value.nombre)
+    const mensaje = await generarYEliminarCodigos(
+      correo,
+      plataformaSeleccionada.value,
+      juegoId,
+      version
+    )
+
+    if (mensaje) {
+      mensajeWhatsApp.value = mensaje
+      showWhatsAppModal.value = true
+      
+      // Recargar los correos para reflejar los códigos eliminados
+      await verCorreosJuego(juegoSeleccionado.value)
+      
+      // Si el modal de detalles está abierto, actualizar también ese correo
+      if (showEmailDetails.value && selectedEmailDetails.value?.correo === correo.correo) {
+        const correoActualizado = correosJuego.value.find(c => c.correo === correo.correo)
+        if (correoActualizado) {
+          selectedEmailDetails.value = correoActualizado
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error generando mensaje:', error)
+    alert('Error al generar el mensaje de WhatsApp')
+  }
+}
+
+const cerrarModalWhatsApp = (): void => {
+  showWhatsAppModal.value = false
+  mensajeWhatsApp.value = null
+}
+
+const copiarMensajeWhatsApp = async (mensaje: string): Promise<void> => {
+  const exitoso = await copiarAlPortapapeles(mensaje)
+  if (!exitoso) {
+    alert('No se pudo copiar el mensaje. Por favor, cópialo manualmente.')
+  }
 }
 
 const iniciarCreacionJuego = (): void => {
@@ -2255,10 +2322,15 @@ onBeforeUnmount(() => {
                       <div class="text-xs opacity-50">Código: {{ email.codigo }}</div>
                     </td>
                     <td>
-                      <span class="badge badge-info">{{ email.codigosGenerados.length + 1 }}</span>
+                      <span 
+                        :class="['badge', validarCodigosDisponibles(email) ? 'badge-success' : 'badge-error']"
+                        :title="`${email.codigosGenerados?.length || 0} códigos generados`"
+                      >
+                        {{ email.codigosGenerados?.length || 0 }} códigos
+                      </span>
                     </td>
                     <td>
-                      <span class="badge badge-success">{{ email.cuentas.length }}</span>
+                      <span class="badge badge-info">{{ email.cuentas.length }}</span>
                     </td>
                     <td>
                       <span 
@@ -2279,6 +2351,41 @@ onBeforeUnmount(() => {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </button>
+                        
+                        <!-- Botón de WhatsApp -->
+                        <div v-if="email.version === 'PS4 & PS5'" class="dropdown dropdown-end">
+                          <label
+                            tabindex="0"
+                            :class="['btn btn-sm gap-1', validarCodigosDisponibles(email) ? 'btn-success' : 'btn-disabled']"
+                          >
+                            <MessageCircle :size="14" />
+                          </label>
+                          <ul tabindex="0" class="dropdown-content z-[100] menu p-2 shadow-lg bg-base-100 rounded-box w-48 border border-white/10 mt-2">
+                            <li>
+                              <a @click.prevent="abrirModalWhatsApp(email, 'PS4')" class="text-xs">
+                                <span class="badge badge-primary badge-sm">PS4</span>
+                                Mensaje PS4
+                              </a>
+                            </li>
+                            <li>
+                              <a @click.prevent="abrirModalWhatsApp(email, 'PS5')" class="text-xs">
+                                <span class="badge badge-secondary badge-sm">PS5</span>
+                                Mensaje PS5
+                              </a>
+                            </li>
+                          </ul>
+                        </div>
+                        <button
+                          v-else
+                          type="button"
+                          :class="['btn btn-sm gap-1', validarCodigosDisponibles(email) ? 'btn-success' : 'btn-disabled']"
+                          :disabled="!validarCodigosDisponibles(email) || isGenerating"
+                          @click.stop="abrirModalWhatsApp(email)"
+                          :title="validarCodigosDisponibles(email) ? 'Generar mensaje WhatsApp' : 'Necesitas al menos 2 códigos'"
+                        >
+                          <MessageCircle :size="14" />
+                        </button>
+                        
                         <button
                           v-if="isAdmin"
                           class="btn btn-sm btn-primary"
@@ -3616,15 +3723,61 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="modal-action">
-          <button class="btn" @click="cerrarDetalles">
+          <button class="btn btn-ghost" @click="cerrarDetalles">
             Cerrar
           </button>
+          
+          <!-- Botón de generar mensaje WhatsApp -->
+          <template v-if="selectedEmailDetails">
+            <div v-if="selectedEmailDetails.version === 'PS4 & PS5'" class="dropdown dropdown-top dropdown-end">
+              <label
+                tabindex="0"
+                :class="['btn gap-2', validarCodigosDisponibles(selectedEmailDetails) ? 'btn-success' : 'btn-disabled']"
+                :disabled="!validarCodigosDisponibles(selectedEmailDetails) || isGenerating"
+              >
+                <MessageCircle :size="20" />
+                Generar Mensaje WhatsApp
+              </label>
+              <ul tabindex="0" class="dropdown-content z-1 menu p-2 shadow-lg bg-base-100 rounded-box w-52 border border-white/10 mb-2">
+                <li>
+                  <button @click="abrirModalWhatsApp(selectedEmailDetails, 'PS4')" :disabled="isGenerating">
+                    <span class="badge badge-primary badge-sm">PS4</span>
+                    Mensaje para PS4
+                  </button>
+                </li>
+                <li>
+                  <button @click="abrirModalWhatsApp(selectedEmailDetails, 'PS5')" :disabled="isGenerating">
+                    <span class="badge badge-secondary badge-sm">PS5</span>
+                    Mensaje para PS5
+                  </button>
+                </li>
+              </ul>
+            </div>
+            <button
+              v-else
+              @click="abrirModalWhatsApp(selectedEmailDetails)"
+              :class="['btn gap-2', validarCodigosDisponibles(selectedEmailDetails) ? 'btn-success' : 'btn-disabled']"
+              :disabled="!validarCodigosDisponibles(selectedEmailDetails) || isGenerating"
+            >
+              <MessageCircle :size="20" />
+              {{ isGenerating ? 'Generando...' : 'Generar Mensaje WhatsApp' }}
+            </button>
+          </template>
         </div>
       </div>
       <form method="dialog" class="modal-backdrop">
         <button @click="cerrarDetalles">close</button>
       </form>
     </dialog>
+
+    <!-- Modal de WhatsApp -->
+    <WhatsAppMessageModal
+      :mensaje="mensajeWhatsApp"
+      :mostrar="showWhatsAppModal"
+      :codigos-restantes="selectedEmailDetails?.codigosGenerados?.length || 0"
+      @cerrar="cerrarModalWhatsApp"
+      @copiar="copiarMensajeWhatsApp"
+    />
   </div>
 </template>
 
