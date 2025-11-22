@@ -88,5 +88,3 @@ Este proyecto incluye optimizaciones completas de SEO:
 - ✅ **SEO dinámico** por ruta
 - ✅ **Optimización de rendimiento** (.htaccess)
 
-Ver **[SEO_GUIDE.md](./SEO_GUIDE.md)** para más detalles sobre la implementación y recomendaciones.
-
