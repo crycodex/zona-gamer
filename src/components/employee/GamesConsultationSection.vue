@@ -71,9 +71,9 @@ const juegosFiltrados = computed(() => {
 
   // Filtro por stock
   if (stockFiltro.value === 'con') {
-    resultado = resultado.filter(juego => juego.stockAccounts > 0)
+    resultado = resultado.filter(juego => (juego.stockAccounts ?? 0) > 0)
   } else if (stockFiltro.value === 'sin') {
-    resultado = resultado.filter(juego => juego.stockAccounts === 0)
+    resultado = resultado.filter(juego => (juego.stockAccounts ?? 0) === 0)
   }
 
   // Ordenamiento
@@ -90,7 +90,7 @@ const juegosFiltrados = computed(() => {
         comparacion = a.totalCorreos - b.totalCorreos
         break
       case 'stock':
-        comparacion = a.stockAccounts - b.stockAccounts
+        comparacion = (a.stockAccounts ?? 0) - (b.stockAccounts ?? 0)
         break
     }
     return sortOrder.value === 'asc' ? comparacion : -comparacion

@@ -18,6 +18,9 @@ interface Combo {
   imagen?: string
 }
 
+// Computed para acceder a los juegos en el template
+const gamesArray = computed(() => games.value)
+
 // Por ahora, creamos combos basados en juegos destacados
 const combos = computed<Combo[]>(() => {
   const destacados = games.value.filter(game => game.destacado || (game.descuento && game.descuento > 0))
@@ -31,6 +34,9 @@ const combos = computed<Combo[]>(() => {
     const juego1 = destacados[i * 2]
     const juego2 = destacados[i * 2 + 1]
     const juego3 = destacados[i * 2 + 2] || null
+    
+    // Verificar que juego1 y juego2 existen
+    if (!juego1 || !juego2) continue
     
     const juegosIds = juego3 
       ? [juego1.id, juego2.id, juego3.id]
@@ -66,12 +72,12 @@ const formatearPrecio = (precio: number): string => {
 }
 
 const getJuegosDelCombo = (combo: Combo) => {
-  return games.value.filter(game => combo.juegos.includes(game.id))
+  return games.value.filter((game: any) => combo.juegos.includes(game.id))
 }
 
 const agregarComboAlCarrito = (combo: Combo): void => {
   const juegos = getJuegosDelCombo(combo)
-  juegos.forEach(juego => {
+  juegos.forEach((juego: any) => {
     cartStore.addToCart(juego, 1)
   })
 }
@@ -138,7 +144,7 @@ const agregarComboAlCarrito = (combo: Combo): void => {
               >
                 <div class="w-2 h-2 rounded-full bg-error"></div>
                 <span class="text-base-content/80">
-                  {{ games.value.find(g => g.id === juegoId)?.nombre || 'Juego' }}
+                  {{ gamesArray.find((g: any) => g.id === juegoId)?.nombre || 'Juego' }}
                 </span>
               </div>
             </div>
