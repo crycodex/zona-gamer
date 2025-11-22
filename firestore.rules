@@ -75,16 +75,17 @@ service cloud.firestore {
     // ========================================
     // Estructura: games/{plataforma}/juegos/{juegoId}
     match /games/{plataforma}/juegos/{juegoId} {
-      // Leer: empleados y admins pueden ver juegos
-      allow read: if isEmployeeOrAdmin();
+      // 🔓 LEER: PÚBLICO (para que la página principal funcione)
+      // Cualquiera puede ver los juegos (necesario para HomeView)
+      allow read: if true;
       
-      // Crear: solo admins pueden crear juegos
+      // 🔒 CREAR: solo admins pueden crear juegos
       allow create: if isAdmin();
       
-      // Actualizar: solo admins pueden actualizar juegos
+      // 🔒 ACTUALIZAR: solo admins pueden actualizar juegos
       allow update: if isAdmin();
       
-      // Eliminar: solo admins pueden eliminar juegos
+      // 🔒 ELIMINAR: solo admins pueden eliminar juegos
       allow delete: if isAdmin();
       
       // ========================================
@@ -92,17 +93,18 @@ service cloud.firestore {
       // ========================================
       // Estructura: games/{plataforma}/juegos/{juegoId}/correos/{correoId}
       match /correos/{correoId} {
-        // Leer: empleados y admins pueden ver correos
+        // 🔒 LEER: solo empleados y admins pueden ver correos
+        // (contienen información sensible: emails y contraseñas)
         allow read: if isEmployeeOrAdmin();
         
-        // Crear: solo admins pueden crear correos
+        // 🔒 CREAR: solo admins pueden crear correos
         allow create: if isAdmin();
         
-        // Actualizar: empleados y admins pueden actualizar
+        // 🔒 ACTUALIZAR: empleados y admins pueden actualizar
         // (necesario para eliminar códigos al generar mensajes WhatsApp)
         allow update: if isEmployeeOrAdmin();
         
-        // Eliminar: solo admins pueden eliminar correos
+        // 🔒 ELIMINAR: solo admins pueden eliminar correos
         allow delete: if isAdmin();
       }
     }
@@ -168,4 +170,3 @@ service cloud.firestore {
     // Cualquier otra ruta que no coincida con las anteriores será denegada por defecto
   }
 }
-
