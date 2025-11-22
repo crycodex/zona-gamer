@@ -408,7 +408,7 @@ onBeforeUnmount(() => {
               <div class="w-full border-t-2 border-error/20"></div>
             </div>
             <div class="relative flex justify-center">
-              <span class="px-8 py-3 bg-gradient-to-r from-error/20 via-warning/20 to-error/20 text-base font-bold glass-effect rounded-full border-2 border-error/30 shadow-lg">
+              <span class="px-8 py-3 bg-linear-gradient(to right, #ff0000, #ffa500, #ffff00, #00ff00, #0000ff, #8a2be2, #ff00ff) text-base font-bold glass-effect rounded-full border-2 border-error/30 shadow-lg">
                 No Te Pierdas Estas Ofertas
               </span>
             </div>
