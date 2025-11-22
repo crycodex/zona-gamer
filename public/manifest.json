@@ -1,0 +1,36 @@
+{
+  "name": "Zona Gamer - Juegos PS4 y PS5 Digital",
+  "short_name": "Zona Gamer",
+  "description": "Compra juegos digitales para PS4 y PS5 en Ecuador. Ofertas exclusivas, entrega inmediata y los mejores precios.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#dc2626",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/Images/logo/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Images/logo/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": [
+    "shopping",
+    "entertainment",
+    "games"
+  ],
+  "lang": "es-EC",
+  "dir": "ltr",
+  "scope": "/",
+  "screenshots": [],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
+

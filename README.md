@@ -77,9 +77,16 @@ Este proyecto usa Firebase para autenticación y base de datos. Para configurar 
 - **daisyUI** - Componentes UI para Tailwind
 - **Lucide Icons** - Sistema de iconos SVG moderno
 
-## Documentación Adicional
+## 🔍 SEO y Optimización
 
-- **[CAMBIOS_FRONTEND.md](./CAMBIOS_FRONTEND.md)** - Documentación completa de los cambios en el frontend
-- **[GUIA_ICONOS.md](./GUIA_ICONOS.md)** - Guía de uso de iconos Lucide
-- **[EJEMPLO_DATOS_FIREBASE.md](./EJEMPLO_DATOS_FIREBASE.md)** - Ejemplos de datos para Firebase
-- **[ESTRUCTURA_BDD.md](./ESTRUCTURA_BDD.md)** - Estructura de la base de datos
+Este proyecto incluye optimizaciones completas de SEO:
+
+- ✅ **Meta tags completos** (Open Graph, Twitter Cards)
+- ✅ **Structured Data** (Schema.org JSON-LD)
+- ✅ **robots.txt** y **sitemap.xml**
+- ✅ **PWA manifest**
+- ✅ **SEO dinámico** por ruta
+- ✅ **Optimización de rendimiento** (.htaccess)
+
+Ver **[SEO_GUIDE.md](./SEO_GUIDE.md)** para más detalles sobre la implementación y recomendaciones.
+

@@ -16,33 +16,68 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: { requiresAuth: false },
+      meta: { 
+        requiresAuth: false,
+        title: 'Zona Gamer - Juegos PS4 y PS5 Digital | Los Mejores Precios de Ecuador',
+        description: 'Compra juegos digitales para PS4 y PS5 en Ecuador. Ofertas exclusivas, entrega inmediata y los mejores precios. Catálogo completo de juegos, DLCs y más.',
+        keywords: 'juegos ps4, juegos ps5, juegos digitales, playstation, ecuador, ofertas, precios bajos, zona gamer, ps4 digital, ps5 digital',
+        robots: 'index, follow'
+      },
     },
     {
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta: { requiresAuth: false },
+      meta: { 
+        requiresAuth: false,
+        title: 'Iniciar Sesión - Zona Gamer',
+        description: 'Inicia sesión en Zona Gamer para gestionar tu cuenta y realizar compras de juegos digitales para PS4 y PS5.',
+        robots: 'noindex, nofollow'
+      },
     },
     {
       path: '/admin',
       name: 'admin',
       component: AdminDashboard,
-      meta: { requiresAuth: true, requiresRole: 'admin' },
+      meta: { 
+        requiresAuth: true, 
+        requiresRole: 'admin',
+        title: 'Panel de Administración - Zona Gamer',
+        description: 'Panel de control administrativo de Zona Gamer',
+        robots: 'noindex, nofollow'
+      },
     },
     {
       path: '/employee',
       name: 'employee',
       component: EmployeeDashboard,
-      meta: { requiresAuth: true, requiresRole: 'employee' },
+      meta: { 
+        requiresAuth: true, 
+        requiresRole: 'employee',
+        title: 'Panel de Empleado - Zona Gamer',
+        description: 'Panel de control para empleados de Zona Gamer',
+        robots: 'noindex, nofollow'
+      },
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: NotFoundView,
-      meta: { requiresAuth: false },
+      meta: { 
+        requiresAuth: false,
+        title: 'Página No Encontrada - Zona Gamer',
+        description: 'La página que buscas no existe. Explora nuestro catálogo de juegos digitales para PS4 y PS5.',
+        robots: 'noindex, follow'
+      },
     },
   ],
+  scrollBehavior(_to, _from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    } else {
+      return { top: 0, behavior: 'smooth' }
+    }
+  }
 })
 
 // Helper para esperar a que Firebase Auth inicialice
@@ -66,6 +101,31 @@ router.beforeEach(
     _from: RouteLocationNormalized,
     next: NavigationGuardNext
   ) => {
+    // Actualizar meta tags dinámicamente
+    if (to.meta.title) {
+      document.title = to.meta.title as string
+    }
+    
+    if (to.meta.description) {
+      const metaDescription = document.querySelector('meta[name="description"]') as HTMLMetaElement
+      if (metaDescription) {
+        metaDescription.setAttribute('content', to.meta.description as string)
+      }
+    }
+    
+    if (to.meta.robots) {
+      const metaRobots = document.querySelector('meta[name="robots"]') as HTMLMetaElement
+      if (metaRobots) {
+        metaRobots.setAttribute('content', to.meta.robots as string)
+      }
+    }
+    
+    // Actualizar canonical URL
+    const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
+    if (canonical) {
+      canonical.setAttribute('href', `https://zonagamer.com${to.path}`)
+    }
+    
     // Esperar a que Firebase Auth inicialice
     const currentUser = await getCurrentUser()
 

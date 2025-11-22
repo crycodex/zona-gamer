@@ -1,0 +1,14 @@
+# robots.txt para Zona Gamer
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /employee
+Disallow: /login
+
+# Sitemaps
+Sitemap: https://zonagamer.com/sitemap.xml
+
+# Crawl-delay para ser amigable con los servidores
+Crawl-delay: 1
+

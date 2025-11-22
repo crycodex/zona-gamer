@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed, watch, onBeforeUnmount } from 'vue'
 import { useGames } from '@/composables/useGames'
 import { useCartStore } from '@/stores/cart'
+import { generarStructuredData, eliminarStructuredData } from '@/composables/useSEO'
 import type { GamePlatform } from '@/types/game'
 import AppNavbar from '@/components/ui/AppNavbar.vue'
 import CartModal from '@/components/ui/CartModal.vue'
@@ -202,6 +203,23 @@ watch(searchTerm, () => {
 onMounted(() => {
   // Siempre cargar desde PS4 & PS5
   cargarJuegos('PS4 & PS5')
+  
+  // Agregar structured data para la página de inicio
+  generarStructuredData('BreadcrumbList', {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [{
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Inicio",
+      "item": "https://zonagamer.com/"
+    }]
+  })
+})
+
+onBeforeUnmount(() => {
+  // Limpiar structured data al salir
+  eliminarStructuredData('BreadcrumbList')
 })
 </script>
 
