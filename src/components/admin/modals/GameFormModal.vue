@@ -55,6 +55,11 @@ const formData = ref<GameFormData>({
 // Resetear form cuando se abre/cierra el modal o cambia el juego
 watch(() => props.show, (newVal) => {
   if (newVal) {
+    // Resetear estados de URL
+    isDriveUrlTransformed.value = false
+    originalUrl.value = ''
+    urlCopied.value = false
+    
     if (props.game) {
       // Editar juego existente
       formData.value = {
@@ -121,11 +126,78 @@ const handleImageError = (event: Event) => {
     target.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23ddd\' width=\'200\' height=\'200\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'18\' dy=\'10.5\' font-weight=\'bold\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\'%3EImagen no disponible%3C/text%3E%3C/svg%3E'
   }
 }
+
+// Función para transformar URLs de Google Drive
+const transformDriveUrl = (url: string): string => {
+  if (!url || !url.trim()) return url
+  
+  // Detectar si es una URL de Google Drive
+  const isDriveUrl = url.includes('drive.google.com/file/d/')
+  
+  if (!isDriveUrl) return url
+  
+  // Extraer el ID del archivo usando regex
+  const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)
+  
+  if (!fileIdMatch || !fileIdMatch[1]) return url
+  
+  const fileId = fileIdMatch[1]
+  
+  // Construir la URL de thumbnail
+  const transformedUrl = `https://drive.google.com/thumbnail?id=${fileId}`
+  
+  return transformedUrl
+}
+
+// Estado para mostrar si se detectó y transformó una URL de Drive
+const isDriveUrlTransformed = ref(false)
+const originalUrl = ref('')
+
+// Función para manejar el cambio en el campo de URL
+const handleUrlInput = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (!target) return
+  
+  const inputUrl = target.value
+  originalUrl.value = inputUrl
+  
+  // Transformar si es URL de Drive
+  const transformed = transformDriveUrl(inputUrl)
+  
+  // Verificar si es una URL de Drive y se transformó
+  const isDriveUrl = inputUrl.includes('drive.google.com/file/d/')
+  
+  if (isDriveUrl && transformed !== inputUrl) {
+    formData.value.foto = transformed
+    isDriveUrlTransformed.value = true
+  } else {
+    formData.value.foto = inputUrl
+    isDriveUrlTransformed.value = false
+  }
+}
+
+// Estado para el feedback de copiado
+const urlCopied = ref(false)
+
+// Función para copiar URL al portapapeles
+const copyUrlToClipboard = async () => {
+  if (!formData.value.foto) return
+  
+  try {
+    await navigator.clipboard.writeText(formData.value.foto)
+    urlCopied.value = true
+    setTimeout(() => {
+      urlCopied.value = false
+    }, 2000)
+  } catch (err) {
+    console.error('Error al copiar:', err)
+  }
+}
 </script>
 
 <template>
   <dialog :class="['modal', { 'modal-open': show }]">
-    <div class="modal-box max-w-3xl max-h-[80vh] overflow-y-auto my-4 p-6">
+    <div class="modal-box max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 my-auto">
       <!-- Header mejorado -->
       <div class="flex justify-between items-center mb-6 pb-4 border-b border-base-300">
         <div class="flex items-center gap-3">
@@ -157,7 +229,7 @@ const handleImageError = (event: Event) => {
         </button>
       </div>
 
-      <form @submit.prevent="handleSubmit" class="space-y-6">
+      <form @submit.prevent="handleSubmit" class="space-y-6 flex-1">
         <!-- Información Básica -->
         <div class="space-y-4">
           <div class="flex items-center gap-2 mb-4">
@@ -336,14 +408,47 @@ const handleImageError = (event: Event) => {
           
           <div class="form-control">
             <label class="label">
-              <span class="label-text font-semibold">URL de la Imagen</span>
+              <span class="label-text font-semibold flex items-center gap-2">
+                URL de la Imagen
+                <span v-if="isDriveUrlTransformed" class="badge badge-success badge-sm gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  URL de Drive transformada
+                </span>
+              </span>
             </label>
-            <input
-              v-model="formData.foto"
-              type="url"
-              placeholder="https://ejemplo.com/imagen.jpg"
-              class="input input-bordered w-full focus:input-primary"
-            />
+            <div class="flex gap-2">
+              <input
+                :value="formData.foto"
+                @input="handleUrlInput"
+                type="url"
+                placeholder="https://drive.google.com/file/d/... o https://ejemplo.com/imagen.jpg"
+                class="input input-bordered w-full focus:input-primary"
+              />
+              <button
+                v-if="formData.foto"
+                type="button"
+                :class="['btn btn-square', urlCopied ? 'btn-success' : 'btn-primary']"
+                @click="copyUrlToClipboard"
+                :title="urlCopied ? '¡Copiado!' : 'Copiar URL'"
+              >
+                <svg v-if="!urlCopied" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+            </div>
+            <label class="label">
+              <span class="label-text-alt text-info flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {{ isDriveUrlTransformed ? 'Las URLs de Google Drive se transforman automáticamente a formato thumbnail' : 'Pega la URL de la imagen. Si es de Google Drive, se convertirá automáticamente.' }}
+              </span>
+            </label>
           </div>
 
           <!-- Vista previa de imagen mejorada -->
