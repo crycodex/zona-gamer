@@ -96,7 +96,7 @@ onUnmounted(() => {
   <div class="relative w-full bg-base-200 py-8">
     <!-- Carrusel contenedor - Con ancho limitado y centrado -->
     <div class="container mx-auto px-4 md:px-6">
-      <div class="relative h-[500px] md:h-[600px] lg:h-[650px] overflow-hidden rounded-lg">
+      <div class="relative overflow-hidden rounded-lg" style="width: 100%; aspect-ratio: 446 / 537;">
         <!-- Slides -->
         <div 
           v-for="(game, index) in featuredGames" 
@@ -104,13 +104,13 @@ onUnmounted(() => {
           class="absolute inset-0 transition-opacity duration-700"
           :class="currentSlide === index ? 'opacity-100 z-10' : 'opacity-0 z-0'"
         >
-          <!-- Background Image - Centrada, sin distorsión, manteniendo proporción -->
+          <!-- Background Image - Dimensiones 446 ancho x 537 alto -->
           <div class="absolute inset-0 flex items-center justify-center bg-base-300">
             <img 
               :src="game.imagen" 
               :alt="game.nombre"
-              class="max-w-full max-h-full w-auto h-auto object-contain"
-              style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;"
+              class="w-full h-full object-cover"
+              style="width: 100%; height: 100%; object-fit: cover; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;"
               loading="eager"
             />
             <!-- Overlay sutil solo en el lado izquierdo - Menos saturado -->

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useCartStore } from '@/stores/cart'
+import { computed } from 'vue'
 import type { GameSummary } from '@/types/game'
-import { ShoppingCart, Star, Zap } from 'lucide-vue-next'
+import { Star } from 'lucide-vue-next'
+import GameCard from '@/components/ui/GameCard.vue'
 
 interface Props {
   games: GameSummary[]
@@ -15,41 +15,7 @@ const props = withDefaults(defineProps<Props>(), {
   subtitle: 'Los mejores juegos en promoción'
 })
 
-const cartStore = useCartStore()
-const selectedAccountType = ref<import('@/types/game').AccountType>('Principal PS4')
-
-const displayGames = computed(() => {
-  // Mostrar máximo 4 banners principales para promociones
-  return props.games.slice(0, 4)
-})
-
 const hasGames = computed(() => props.games.length > 0)
-
-const getPrice = (game: GameSummary): number => {
-  switch (selectedAccountType.value) {
-    case 'Principal PS4':
-      return game.precios.ps4Principal
-    case 'Secundaria PS4':
-      return game.precios.ps4Secundaria
-    case 'Principal PS5':
-      return game.precios.ps5Principal
-    case 'Secundaria PS5':
-      return game.precios.ps5Secundaria
-    default:
-      return game.precios.ps4Principal
-  }
-}
-
-const addToCart = (game: GameSummary) => {
-  cartStore.addToCart(game, 1, selectedAccountType.value)
-}
-
-const formatPrice = (price: number) => {
-  return new Intl.NumberFormat('es-EC', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(price)
-}
 </script>
 
 <template>
@@ -80,139 +46,14 @@ const formatPrice = (price: number) => {
         </div>
       </div>
 
-      <!-- Grid de Banners 2x2 para Promociones -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <div
-          v-for="game in displayGames"
+      <!-- Grid de juegos en fila horizontal -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <GameCard
+          v-for="game in games"
           :key="game.id"
-          class="group relative overflow-hidden rounded-2xl cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl"
-        >
-          <!-- Banner horizontal -->
-          <div class="relative h-[280px] md:h-[320px] overflow-hidden">
-            <!-- Imagen de fondo -->
-            <div 
-              class="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-              :style="{ 
-                backgroundImage: game.foto ? `url(${game.foto})` : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-              }"
-            ></div>
-            
-            <!-- Overlay gradiente -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent"></div>
-            
-            <!-- Badge de promoción -->
-            <div class="absolute top-4 right-4">
-              <div class="badge badge-warning badge-lg gap-2 font-bold shadow-lg">
-                <Zap :size="16" class="fill-current" />
-                PROMOCIÓN
-              </div>
-            </div>
-            
-            <!-- Contenido del banner -->
-            <div class="absolute inset-0 flex flex-col justify-end p-6">
-              <!-- Plataforma y stock -->
-              <div class="flex flex-wrap gap-2 mb-3">
-                <span class="badge badge-primary badge-sm">
-                  {{ game.version }}
-                </span>
-                <span v-if="game.stockAccounts && game.stockAccounts > 0" class="badge badge-success badge-sm">
-                  {{ game.stockAccounts }} disponible{{ game.stockAccounts > 1 ? 's' : '' }}
-                </span>
-              </div>
-              
-              <!-- Título -->
-              <h3 class="text-2xl md:text-3xl font-black text-white mb-3 drop-shadow-lg line-clamp-2 group-hover:text-warning transition-colors">
-                {{ game.nombre }}
-              </h3>
-              
-              <!-- Selector de tipo de cuenta, precio y botón -->
-              <div class="flex flex-col gap-3">
-                <select 
-                  v-model="selectedAccountType" 
-                  class="select select-bordered select-sm bg-base-100/80 backdrop-blur-md w-full max-w-xs"
-                >
-                  <option value="Principal PS4">PS4 Principal</option>
-                  <option value="Secundaria PS4">PS4 Secundaria</option>
-                  <option value="Principal PS5">PS5 Principal</option>
-                  <option value="Secundaria PS5">PS5 Secundaria</option>
-                </select>
-                <div class="flex items-center justify-between gap-4">
-                  <div class="flex items-center gap-2">
-                    <div class="bg-warning/20 backdrop-blur-md px-4 py-2 rounded-lg border border-warning/30">
-                      <p class="text-2xl font-black text-white">
-                        {{ formatPrice(getPrice(game)) }}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <button
-                    @click.stop="addToCart(game)"
-                    class="btn btn-warning btn-sm md:btn-md gap-2 shadow-lg hover:scale-110 transition-transform"
-                  >
-                    <ShoppingCart :size="18" />
-                    <span class="hidden md:inline">Agregar</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Promociones adicionales en formato compacto -->
-      <div v-if="games.length > 4" class="mt-8">
-        <div class="divider">
-          <span class="text-sm font-semibold">Más Promociones</span>
-        </div>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          <div
-            v-for="game in games.slice(4, 12)"
-            :key="game.id"
-            class="group relative overflow-hidden rounded-xl cursor-pointer hover:scale-105 transition-all duration-300 hover:shadow-xl"
-            @click="addToCart(game)"
-          >
-            <!-- Card compacta -->
-            <div class="aspect-[3/4] relative overflow-hidden">
-              <img
-                v-if="game.foto"
-                :src="game.foto"
-                :alt="game.nombre"
-                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-              />
-              <div v-else class="w-full h-full bg-gradient-to-br from-warning to-primary"></div>
-              
-              <!-- Overlay con info -->
-              <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                <div class="absolute inset-0 flex flex-col justify-end p-3">
-                  <p class="text-xs md:text-sm font-bold text-white line-clamp-2 mb-2">{{ game.nombre }}</p>
-                  <div class="flex items-center justify-between">
-                    <p class="text-lg md:text-xl font-black text-warning">{{ formatPrice(getPrice(game)) }}</p>
-                    <div class="btn btn-xs btn-warning btn-circle">
-                      <ShoppingCart :size="14" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Badge flotante -->
-              <div class="absolute top-2 right-2 badge badge-warning badge-xs font-bold">
-                HOT
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Mensaje si hay aún más promociones -->
-        <div v-if="games.length > 12" class="mt-6 text-center">
-          <div class="inline-flex items-center gap-2 bg-base-300/50 px-6 py-3 rounded-full border border-white/10">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-info" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span class="text-sm font-medium">
-              ¡Y {{ games.length - 12 }} promociones más disponibles!
-            </span>
-          </div>
-        </div>
+          :game="game"
+          :show-add-to-cart="true"
+        />
       </div>
     </div>
   </section>

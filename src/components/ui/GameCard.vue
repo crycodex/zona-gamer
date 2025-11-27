@@ -127,15 +127,16 @@ const stars = computed(() => {
 
 <template>
   <div 
-    class="card bg-base-100 shadow-lg hover:shadow-xl relative overflow-hidden group border border-white/5 transition-all duration-300 flex flex-col h-full aspect-2/3"
+    class="card bg-base-100 shadow-lg hover:shadow-xl relative overflow-hidden group border border-white/5 transition-all duration-300 flex flex-col h-full"
   >
-    <!-- Contenedor de imagen - Ocupa el 100% del espacio disponible -->
-    <div class="relative flex-1 bg-base-300 overflow-hidden">
+    <!-- Contenedor de imagen - Dimensiones 446 ancho x 537 alto -->
+    <div class="relative bg-base-300 overflow-hidden flex-shrink-0" style="width: 100%; aspect-ratio: 446 / 537;">
       <img 
         v-if="game.foto" 
         :src="game.foto" 
         :alt="game.nombre"
         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+        style="width: 100%; height: 100%; object-fit: cover;"
         loading="lazy"
       />
       <div v-else class="w-full h-full flex items-center justify-center">
@@ -189,7 +190,7 @@ const stars = computed(() => {
     </div>
 
     <!-- Barra de información - Debajo de la imagen -->
-    <div class="bg-base-200 px-3 py-2 space-y-2">
+    <div class="bg-base-200 px-3 py-2 space-y-2 flex-shrink-0">
       <!-- Título y plataforma -->
       <div class="flex-1 min-w-0">
         <h2 class="text-xs font-semibold text-white truncate">

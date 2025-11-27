@@ -804,9 +804,9 @@ defineExpose({
                 <td>{{ index + 1 }}</td>
                 <td>
                   <div class="avatar">
-                    <div class="w-16 rounded">
-                      <img v-if="juego.foto" :src="juego.foto" :alt="juego.nombre" class="object-cover" />
-                      <div v-else class="bg-base-300 w-full h-full flex items-center justify-center">
+                    <div class="rounded overflow-hidden" style="width: 89px; height: 107px; aspect-ratio: 446 / 537;">
+                      <img v-if="juego.foto" :src="juego.foto" :alt="juego.nombre" class="w-full h-full object-cover" style="width: 100%; height: 100%; object-fit: cover;" />
+                      <div v-else class="bg-base-300 w-full h-full flex items-center justify-center" style="width: 100%; height: 100%;">
                         <Gamepad2 :size="24" class="opacity-30" />
                       </div>
                     </div>

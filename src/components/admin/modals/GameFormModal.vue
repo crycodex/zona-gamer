@@ -500,8 +500,8 @@ const copyUrlToClipboard = async () => {
                 Vista previa
               </h4>
               <div class="flex justify-center">
-                <div class="w-48 h-48 rounded-lg overflow-hidden shadow-xl border-2 border-primary/20">
-                  <img :src="formData.foto" alt="Preview" class="w-full h-full object-cover" @error="handleImageError" />
+                <div class="rounded-lg overflow-hidden shadow-xl border-2 border-primary/20" style="width: 446px; height: 537px; max-width: 100%; aspect-ratio: 446 / 537;">
+                  <img :src="formData.foto" alt="Preview" class="w-full h-full object-cover" style="width: 100%; height: 100%; object-fit: cover;" @error="handleImageError" />
                 </div>
               </div>
             </div>
