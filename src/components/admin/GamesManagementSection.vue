@@ -969,15 +969,7 @@ defineExpose({
               <div class="grid grid-cols-2 gap-4">
                 <div><span class="font-semibold">Correo:</span><p class="font-mono text-sm">{{ selectedEmailDetails.correo }}</p></div>
                 <div><span class="font-semibold">Nombre:</span><p>{{ selectedEmailDetails.nombre }}</p></div>
-                <div class="md:col-span-2">
-                  <span class="font-semibold">Precios:</span>
-                  <div class="grid grid-cols-2 gap-2 mt-1">
-                    <div class="badge badge-primary">PS4 Principal: {{ formatearPrecio(selectedEmailDetails.precios.ps4Principal) }}</div>
-                    <div class="badge badge-secondary">PS4 Secundaria: {{ formatearPrecio(selectedEmailDetails.precios.ps4Secundaria) }}</div>
-                    <div class="badge badge-success">PS5 Principal: {{ formatearPrecio(selectedEmailDetails.precios.ps5Principal) }}</div>
-                    <div class="badge badge-accent">PS5 Secundaria: {{ formatearPrecio(selectedEmailDetails.precios.ps5Secundaria) }}</div>
-                  </div>
-                </div>
+                <div><span class="font-semibold">Costo:</span><p>{{ formatearPrecio(selectedEmailDetails.costo || 0) }}</p></div>
                 <div><span class="font-semibold">Código:</span><p>{{ selectedEmailDetails.codigo }}</p></div>
               </div>
             </div>
