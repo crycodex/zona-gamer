@@ -304,6 +304,32 @@ export function useGames() {
     }
   }
 
+  // Función helper para eliminar recursivamente todos los undefined
+  const removeUndefined = (obj: any): any => {
+    if (obj === null || obj === undefined) {
+      return null
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => removeUndefined(item)).filter(item => item !== undefined && item !== null)
+    }
+    
+    if (typeof obj === 'object' && obj.constructor === Object) {
+      const cleaned: Record<string, any> = {}
+      for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) {
+          const cleanedValue = removeUndefined(value)
+          if (cleanedValue !== undefined && cleanedValue !== null) {
+            cleaned[key] = cleanedValue
+          }
+        }
+      }
+      return cleaned
+    }
+    
+    return obj
+  }
+
   const crearCorreoJuego = async (
     plataforma: GamePlatform,
     juegoId: string,
@@ -317,18 +343,28 @@ export function useGames() {
       const correoRef = doc(db, 'games', plataforma, 'juegos', juegoId, 'correos', correo)
       const juegoRef = doc(db, 'games', plataforma, 'juegos', juegoId)
 
-      // Construir el objeto de datos, filtrando campos undefined
+      // Construir el objeto de datos
       const correoData: Record<string, any> = {
         nombre: datosCorreo.nombre,
         precios: datosCorreo.precios,
         version: datosCorreo.version,
-        codigoMaster: datosCorreo.codigoMaster,
-        codigosGenerados: datosCorreo.codigosGenerados,
         fecha: Timestamp.fromDate(datosCorreo.fecha),
-        codigo: datosCorreo.codigo,
-        cuentas: datosCorreo.cuentas,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
+      }
+      
+      // Agregar campos opcionales solo si tienen valor (no undefined)
+      if (datosCorreo.codigoMaster !== undefined && datosCorreo.codigoMaster !== null && datosCorreo.codigoMaster !== '') {
+        correoData.codigoMaster = datosCorreo.codigoMaster
+      }
+      if (datosCorreo.codigosGenerados !== undefined && datosCorreo.codigosGenerados !== null && Array.isArray(datosCorreo.codigosGenerados)) {
+        correoData.codigosGenerados = datosCorreo.codigosGenerados
+      }
+      if (datosCorreo.codigo !== undefined && datosCorreo.codigo !== null && datosCorreo.codigo !== '') {
+        correoData.codigo = datosCorreo.codigo
+      }
+      if (datosCorreo.cuentas !== undefined && datosCorreo.cuentas !== null && Array.isArray(datosCorreo.cuentas)) {
+        correoData.cuentas = datosCorreo.cuentas
       }
       
       // Legacy: mantener costo para compatibilidad (usar el precio más bajo)
@@ -339,20 +375,23 @@ export function useGames() {
           datosCorreo.precios.ps5Principal,
           datosCorreo.precios.ps5Secundaria
         )
-      } else if (datosCorreo.costo !== undefined) {
+      } else if (datosCorreo.costo !== undefined && datosCorreo.costo !== null) {
         correoData.costo = datosCorreo.costo
       }
 
       // Agregar campos opcionales solo si tienen valor
-      if (datosCorreo.saldo !== undefined) {
+      if (datosCorreo.saldo !== undefined && datosCorreo.saldo !== null) {
         correoData.saldo = datosCorreo.saldo
       }
-      if (datosCorreo.createdBy) {
+      if (datosCorreo.createdBy !== undefined && datosCorreo.createdBy !== null && datosCorreo.createdBy !== '') {
         correoData.createdBy = datosCorreo.createdBy
       }
 
+      // Limpiar recursivamente todos los undefined (incluyendo objetos anidados)
+      const filteredData = removeUndefined(correoData)
+
       // Crear el correo
-      await setDoc(correoRef, correoData)
+      await setDoc(correoRef, filteredData)
 
       // Actualizar los precios del juego en el documento principal
       // El último correo subido actualiza los precios del juego
@@ -393,25 +432,47 @@ export function useGames() {
       const correoRef = doc(db, 'games', plataforma, 'juegos', juegoId, 'correos', correo)
       const juegoRef = doc(db, 'games', plataforma, 'juegos', juegoId)
 
-      // Filtrar campos undefined (Firebase no los acepta)
-      const datosLimpios: Record<string, any> = {}
-      Object.keys(datos).forEach(key => {
-        const value = datos[key as keyof typeof datos]
-        if (value !== undefined) {
-          datosLimpios[key] = value
-        }
-      })
-
+      // Construir objeto de datos actualizados
       const datosActualizados: Record<string, any> = {
-        ...datosLimpios,
         updatedAt: Timestamp.now()
       }
 
+      // Agregar solo los campos que tienen valor
+      if (datos.nombre !== undefined && datos.nombre !== null) {
+        datosActualizados.nombre = datos.nombre
+      }
+      if (datos.precios !== undefined && datos.precios !== null) {
+        datosActualizados.precios = datos.precios
+      }
+      if (datos.version !== undefined && datos.version !== null) {
+        datosActualizados.version = datos.version
+      }
+      if (datos.codigoMaster !== undefined && datos.codigoMaster !== null && datos.codigoMaster !== '') {
+        datosActualizados.codigoMaster = datos.codigoMaster
+      }
+      if (datos.codigo !== undefined && datos.codigo !== null && datos.codigo !== '') {
+        datosActualizados.codigo = datos.codigo
+      }
+      if (datos.codigosGenerados !== undefined && datos.codigosGenerados !== null && Array.isArray(datos.codigosGenerados)) {
+        datosActualizados.codigosGenerados = datos.codigosGenerados
+      }
+      if (datos.cuentas !== undefined && datos.cuentas !== null && Array.isArray(datos.cuentas)) {
+        datosActualizados.cuentas = datos.cuentas
+      }
       if (datos.fecha) {
         datosActualizados.fecha = Timestamp.fromDate(datos.fecha)
       }
+      if (datos.saldo !== undefined && datos.saldo !== null) {
+        datosActualizados.saldo = datos.saldo
+      }
+      if (datos.createdBy !== undefined && datos.createdBy !== null && datos.createdBy !== '') {
+        datosActualizados.createdBy = datos.createdBy
+      }
 
-      await updateDoc(correoRef, datosActualizados)
+      // Limpiar recursivamente todos los undefined (incluyendo objetos anidados)
+      const filteredData = removeUndefined(datosActualizados)
+
+      await updateDoc(correoRef, filteredData)
 
       // Si se actualizan los precios o el costo, también actualizar en el documento del juego
       if (datos.precios) {
