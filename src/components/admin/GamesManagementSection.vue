@@ -814,7 +814,6 @@ defineExpose({
                 </td>
                 <td>
                   <div class="font-bold">{{ juego.nombre }}</div>
-                  <div class="text-sm opacity-50">ID: {{ juego.id }}</div>
                 </td>
                 <td>
                   <div class="flex flex-col gap-1">
