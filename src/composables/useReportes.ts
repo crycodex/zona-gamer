@@ -95,11 +95,6 @@ export function useReportes() {
       throw error
     }
   }
-    } catch (error) {
-      console.error('❌ Error creando reporte:', error)
-      throw error
-    }
-  }
 
   /**
    * Cargar todos los reportes con filtros opcionales

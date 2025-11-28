@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { MessageCircle, Copy, CheckCircle, X, Save } from 'lucide-vue-next'
+import { MessageCircle, Copy, CheckCircle, X, Save, User, Phone, CreditCard, Mail, Key, Sparkles } from 'lucide-vue-next'
 import type { WhatsAppMessage } from '@/composables/useWhatsAppMessages'
 import type { AccountType } from '@/types/game'
 
@@ -129,79 +129,97 @@ watch(() => props.mostrar, (nuevoValor) => {
 
 <template>
   <dialog v-if="mostrar && mensaje" class="modal modal-open">
-    <div class="modal-box max-w-6xl">
-      <!-- Header -->
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center gap-3">
-          <div class="avatar placeholder">
-            <div class="bg-success text-success-content rounded-full w-12">
-              <MessageCircle :size="24" />
+    <div class="modal-box max-w-6xl max-h-[90vh] p-0 overflow-y-auto overflow-x-hidden">
+      <!-- Header con gradiente -->
+      <div class="bg-linear-to-r from-success via-success/90 to-success/80 p-6 text-white sticky top-0 z-10">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <div class="avatar placeholder">
+              <div class="bg-white/20 backdrop-blur-sm text-white rounded-full w-14 h-14 border-2 border-white/30 shadow-lg">
+                <MessageCircle :size="28" />
+              </div>
+            </div>
+            <div>
+              <h3 class="font-bold text-2xl mb-1">Mensaje para WhatsApp</h3>
+              <p class="text-sm text-white/90 flex items-center gap-2">
+                <Sparkles :size="14" />
+                {{ clienteGuardado ? 'Listo para copiar y enviar' : 'Asigna el cliente y luego copia el mensaje' }}
+              </p>
             </div>
           </div>
-          <div>
-            <h3 class="font-bold text-xl">Mensaje para WhatsApp</h3>
-            <p class="text-sm text-base-content/60">
-              {{ clienteGuardado ? 'Listo para copiar y enviar' : 'Asigna el cliente y luego copia el mensaje' }}
-            </p>
-          </div>
+          <button @click="handleCerrar" class="btn btn-sm btn-circle btn-ghost hover:bg-white/20 text-white border-white/30">
+            <X :size="20" />
+          </button>
         </div>
-        <button @click="handleCerrar" class="btn btn-sm btn-circle btn-ghost">
-          <X :size="20" />
-        </button>
       </div>
 
+      <div class="p-6">
+
       <!-- Layout de dos columnas: Formulario a la izquierda, Mensaje a la derecha -->
-      <div v-if="!clienteGuardado" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+      <div v-if="!clienteGuardado" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Columna izquierda: Formulario de datos del cliente -->
-        <div class="card bg-base-200">
-          <div class="card-body p-4">
-            <h4 class="font-semibold mb-3 flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              Asignar Cliente al Correo
-            </h4>
-            <div class="space-y-3">
+        <div class="card bg-linear-to-br from-base-200 to-base-300 shadow-xl border border-base-300">
+          <div class="card-body p-6">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="p-3 bg-success/20 rounded-xl">
+                <User :size="24" class="text-success" />
+              </div>
+              <div>
+                <h4 class="font-bold text-lg">Asignar Cliente</h4>
+                <p class="text-xs text-base-content/60">Completa los datos del cliente</p>
+              </div>
+            </div>
+            <div class="space-y-4">
               <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-semibold">Nombre del Cliente</span>
+                <label class="label pb-2">
+                  <span class="label-text font-semibold flex items-center gap-2">
+                    <User :size="16" class="text-primary" />
+                    Nombre del Cliente
+                  </span>
                 </label>
                 <input
                   v-model="clienteNombre"
                   type="text"
                   placeholder="Ej: Juan Pérez"
-                  class="input input-bordered input-sm"
+                  class="input input-bordered focus:input-primary transition-all"
                 />
               </div>
               <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-semibold">Teléfono</span>
+                <label class="label pb-2">
+                  <span class="label-text font-semibold flex items-center gap-2">
+                    <Phone :size="16" class="text-primary" />
+                    Teléfono
+                  </span>
                 </label>
                 <input
                   v-model="clienteTelefono"
                   type="text"
                   placeholder="Ej: +593 99 123 4567"
-                  class="input input-bordered input-sm"
+                  class="input input-bordered focus:input-primary transition-all"
                 />
               </div>
               <div class="form-control">
-                <label class="label">
-                  <span class="label-text font-semibold">Tipo de Cuenta</span>
+                <label class="label pb-2">
+                  <span class="label-text font-semibold flex items-center gap-2">
+                    <CreditCard :size="16" class="text-primary" />
+                    Tipo de Cuenta
+                  </span>
                 </label>
-                <select v-model="tipoCuenta" class="select select-bordered select-sm">
+                <select v-model="tipoCuenta" class="select select-bordered focus:select-primary transition-all">
                   <option v-for="tipo in opcionesCuenta" :key="tipo" :value="tipo">
                     {{ tipo }}
                   </option>
                 </select>
               </div>
             </div>
-            <div class="mt-4">
+            <div class="mt-6">
               <button
                 @click="handleGuardarCliente"
                 :disabled="!clienteNombre.trim() || !clienteTelefono.trim() || guardando"
-                class="btn btn-sm btn-success gap-2 w-full"
+                class="btn btn-success gap-2 w-full shadow-lg hover:shadow-xl transition-all"
+                :class="guardando ? 'loading' : ''"
               >
-                <Save :size="16" />
+                <Save v-if="!guardando" :size="18" />
                 {{ guardando ? 'Guardando...' : 'Guardar Información del Cliente' }}
               </button>
             </div>
@@ -209,37 +227,52 @@ watch(() => props.mostrar, (nuevoValor) => {
         </div>
 
         <!-- Columna derecha: Información del mensaje (vista previa) -->
-        <div class="card bg-base-200">
-          <div class="card-body p-4">
-            <h4 class="font-semibold mb-3">Vista Previa del Mensaje</h4>
-            <div class="space-y-2 text-sm mb-3">
-              <div>
-                <span class="font-semibold">Correo:</span>
-                <p class="text-base-content/80 break-all text-xs">{{ mensaje.correo }}</p>
+        <div class="card bg-linear-to-br from-primary/10 via-primary/5 to-base-200 shadow-xl border border-primary/20">
+          <div class="card-body p-6">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="p-3 bg-primary/20 rounded-xl">
+                <MessageCircle :size="24" class="text-primary" />
               </div>
               <div>
-                <span class="font-semibold">Plataforma:</span>
-                <div class="mt-1">
-                  <span :class="['badge badge-sm', badgeVersionClass]">{{ mensaje.version }}</span>
+                <h4 class="font-bold text-lg">Vista Previa</h4>
+                <p class="text-xs text-base-content/60">Información del mensaje</p>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
+                <div class="flex items-center gap-2 mb-2">
+                  <Mail :size="16" class="text-primary" />
+                  <span class="font-semibold text-sm">Correo:</span>
+                </div>
+                <p class="text-base-content/80 break-all text-sm font-mono bg-base-200 p-2 rounded">{{ mensaje.correo }}</p>
+              </div>
+              <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
+                <div class="flex items-center gap-2 mb-2">
+                  <span :class="['badge', badgeVersionClass, 'badge-lg']">{{ mensaje.version }}</span>
+                  <span class="text-sm font-semibold">Plataforma</span>
                 </div>
               </div>
-              <div class="grid grid-cols-2 gap-2">
-                <div>
-                  <span class="font-semibold text-xs">Código 1:</span>
-                  <p class="font-mono text-warning text-xs">{{ mensaje.codigoVerificacion1 }}</p>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
+                  <div class="flex items-center gap-2 mb-2">
+                    <Key :size="14" class="text-warning" />
+                    <span class="font-semibold text-xs">Código 1</span>
+                  </div>
+                  <p class="font-mono text-warning font-bold text-sm">{{ mensaje.codigoVerificacion1 }}</p>
                 </div>
-                <div>
-                  <span class="font-semibold text-xs">Código 2:</span>
-                  <p class="font-mono text-warning text-xs">{{ mensaje.codigoVerificacion2 }}</p>
+                <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
+                  <div class="flex items-center gap-2 mb-2">
+                    <Key :size="14" class="text-warning" />
+                    <span class="font-semibold text-xs">Código 2</span>
+                  </div>
+                  <p class="font-mono text-warning font-bold text-sm">{{ mensaje.codigoVerificacion2 }}</p>
                 </div>
               </div>
             </div>
-            <div class="alert alert-info py-2">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-4 h-4">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
-              <span class="text-xs">
-                Guarda la información del cliente para ver el mensaje completo
+            <div class="alert alert-info mt-4 shadow-sm">
+              <Sparkles :size="18" />
+              <span class="text-sm">
+                <strong>Paso siguiente:</strong> Guarda la información del cliente para ver el mensaje completo
               </span>
             </div>
           </div>
@@ -247,43 +280,56 @@ watch(() => props.mostrar, (nuevoValor) => {
       </div>
 
       <!-- Vista completa del mensaje después de guardar -->
-      <div v-else class="space-y-4">
+      <div v-else class="space-y-6 animate-fadeIn">
         <!-- Información de la cuenta -->
-        <div class="card bg-base-200">
-          <div class="card-body p-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <span class="font-semibold">Correo:</span>
-                <p class="text-base-content/80 break-all">{{ mensaje.correo }}</p>
+        <div class="card bg-linear-to-br from-success/10 via-success/5 to-base-200 shadow-xl border border-success/20">
+          <div class="card-body p-6">
+            <div class="flex items-center gap-3 mb-4">
+              <div class="p-3 bg-success/20 rounded-xl">
+                <CheckCircle :size="24" class="text-success" />
               </div>
               <div>
-                <span class="font-semibold">Plataforma:</span>
-                <div class="mt-1">
-                  <span :class="['badge', badgeVersionClass]">{{ mensaje.version }}</span>
-                </div>
+                <h4 class="font-bold text-lg">Cliente Asignado</h4>
+                <p class="text-sm text-base-content/60">Información del correo y códigos</p>
               </div>
             </div>
-
-            <!-- Códigos usados -->
-            <div class="divider my-2"></div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-              <div>
-                <span class="font-semibold">Código 1:</span>
-                <p class="font-mono text-warning">{{ mensaje.codigoVerificacion1 }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
+                <div class="flex items-center gap-2 mb-2">
+                  <Mail :size="16" class="text-primary" />
+                  <span class="font-semibold">Correo:</span>
+                </div>
+                <p class="text-base-content/80 break-all text-sm font-mono bg-base-200 p-2 rounded">{{ mensaje.correo }}</p>
               </div>
-              <div>
-                <span class="font-semibold">Código 2:</span>
-                <p class="font-mono text-warning">{{ mensaje.codigoVerificacion2 }}</p>
+              <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="font-semibold">Plataforma:</span>
+                </div>
+                <span :class="['badge badge-lg', badgeVersionClass]">{{ mensaje.version }}</span>
+              </div>
+              <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
+                <div class="flex items-center gap-2 mb-2">
+                  <Key :size="16" class="text-warning" />
+                  <span class="font-semibold">Código 1:</span>
+                </div>
+                <p class="font-mono text-warning font-bold text-lg">{{ mensaje.codigoVerificacion1 }}</p>
+              </div>
+              <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
+                <div class="flex items-center gap-2 mb-2">
+                  <Key :size="16" class="text-warning" />
+                  <span class="font-semibold">Código 2:</span>
+                </div>
+                <p class="font-mono text-warning font-bold text-lg">{{ mensaje.codigoVerificacion2 }}</p>
               </div>
             </div>
 
             <!-- Códigos restantes -->
-            <div v-if="codigosRestantes !== undefined" class="mt-2">
-              <div class="alert alert-info py-2">
+            <div v-if="codigosRestantes !== undefined" class="mt-4">
+              <div class="alert alert-info shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-5 h-5">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                <span class="text-xs">
+                <span class="text-sm">
                   <strong>Códigos restantes después de usar estos:</strong> {{ codigosRestantes }}
                 </span>
               </div>
@@ -292,40 +338,52 @@ watch(() => props.mostrar, (nuevoValor) => {
         </div>
 
         <!-- Mensaje completo -->
-        <div class="form-control">
-          <label class="label">
-            <span class="label-text font-semibold">Mensaje completo:</span>
-            <span class="label-text-alt text-base-content/60">
-              Haz clic en copiar para enviarlo por WhatsApp
-            </span>
-          </label>
-          <textarea
-            :value="mensaje.mensajeCompleto"
-            readonly
-            class="textarea textarea-bordered font-mono text-sm h-72 resize-none"
-          />
+        <div class="card bg-linear-to-br from-primary/10 via-primary/5 to-base-200 shadow-xl border border-primary/20">
+          <div class="card-body p-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="p-2 bg-primary/20 rounded-lg">
+                  <MessageCircle :size="20" class="text-primary" />
+                </div>
+                <div>
+                  <label class="label-text font-bold text-lg">Mensaje completo</label>
+                  <p class="text-xs text-base-content/60">Haz clic en copiar para enviarlo por WhatsApp</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-base-100 rounded-lg p-4 border-2 border-primary/20 shadow-inner">
+              <textarea
+                :value="mensaje.mensajeCompleto"
+                readonly
+                class="textarea textarea-ghost font-mono text-sm h-80 resize-none p-4 bg-transparent border-0 focus:outline-none"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Acciones -->
-      <div class="modal-action">
-        <button @click="handleCerrar" class="btn btn-ghost">
+      <div class="modal-action gap-3 pt-4 border-t border-base-300">
+        <button @click="handleCerrar" class="btn btn-ghost gap-2">
+          <X :size="18" />
           Cerrar
         </button>
         <button 
           v-if="clienteGuardado"
           @click="handleCopiar" 
-          :class="['btn', copiado ? 'btn-success' : 'btn-primary']"
-          class="gap-2"
+          :class="[
+            'btn gap-2 shadow-lg hover:shadow-xl transition-all',
+            copiado ? 'btn-success' : 'btn-primary'
+          ]"
         >
           <CheckCircle v-if="copiado" :size="20" />
           <Copy v-else :size="20" />
-          {{ copiado ? '¡Copiado!' : 'Copiar Mensaje' }}
+          {{ copiado ? '¡Copiado al Portapapeles!' : 'Copiar Mensaje' }}
         </button>
       </div>
 
       <!-- Nota importante -->
-      <div class="alert alert-warning mt-4">
+      <div v-if="clienteGuardado" class="alert alert-warning shadow-sm mt-4">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
         </svg>
@@ -334,10 +392,28 @@ watch(() => props.mostrar, (nuevoValor) => {
           <p>Los códigos utilizados ya han sido eliminados de la base de datos automáticamente.</p>
         </div>
       </div>
+      </div>
     </div>
     <form method="dialog" class="modal-backdrop">
       <button @click="handleCerrar">close</button>
     </form>
   </dialog>
 </template>
+
+<style scoped>
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+</style>
 

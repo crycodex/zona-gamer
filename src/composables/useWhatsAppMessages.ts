@@ -58,7 +58,12 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
   /**
    * Valida que haya suficientes códigos disponibles
    */
-  const validarCodigosDisponibles = (correo: GameEmailAccount): boolean => {
+  const validarCodigosDisponibles = (correo: GameEmailAccount | null | undefined): boolean => {
+    if (!correo) {
+      console.warn('⚠️ Validación de códigos: correo es null o undefined')
+      return false
+    }
+    
     const hasCodigos = correo.codigosGenerados &&
       Array.isArray(correo.codigosGenerados) &&
       correo.codigosGenerados.length >= 2
