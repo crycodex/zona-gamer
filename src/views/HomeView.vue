@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch, onBeforeUnmount } from 'vue'
 import { useGames } from '@/composables/useGames'
+import { useCombos } from '@/composables/useCombos'
 import { useCartStore } from '@/stores/cart'
 import { generarStructuredData, eliminarStructuredData } from '@/composables/useSEO'
 import type { GamePlatform } from '@/types/game'
@@ -20,6 +21,7 @@ import ContactLocationSection from '@/components/sections/ContactLocationSection
 import AppFooter from '@/components/ui/AppFooter.vue'
 
 const { games, isLoadingGames, cargarJuegos } = useGames()
+const { combos, isLoadingCombos, cargarCombos } = useCombos()
 const cartStore = useCartStore()
 
 const plataformaSeleccionada = ref<GamePlatform>('PS4 & PS5')
@@ -202,9 +204,17 @@ watch(searchTerm, () => {
   currentPageSearch.value = 1
 })
 
-onMounted(() => {
+onMounted(async () => {
   // Siempre cargar desde PS4 & PS5
-  cargarJuegos('PS4 & PS5')
+  try {
+    await Promise.all([
+      cargarJuegos('PS4 & PS5'),
+      cargarCombos('PS4 & PS5', true) // Forzar refresh para asegurar que se carguen
+    ])
+    console.log('✅ Juegos y combos cargados en HomeView')
+  } catch (error) {
+    console.error('❌ Error cargando juegos/combos en HomeView:', error)
+  }
   
   // Agregar structured data para la página de inicio
   generarStructuredData('BreadcrumbList', {
@@ -241,14 +251,14 @@ onBeforeUnmount(() => {
       <div class="absolute bottom-1/4 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
 
       <!-- Loading mejorado -->
-      <div v-if="isLoadingGames" class="flex justify-center items-center min-h-[400px]">
+      <div v-if="isLoadingGames || isLoadingCombos" class="flex justify-center items-center min-h-[400px]">
         <div class="text-center space-y-6 animate-fadeInUp">
           <div class="relative">
             <span class="loading loading-spinner loading-lg text-error"></span>
             <div class="absolute inset-0 loading loading-spinner loading-lg text-error opacity-50 scale-150"></div>
           </div>
           <div>
-            <p class="text-2xl font-bold text-gradient-animated mb-2">Cargando juegos...</p>
+            <p class="text-2xl font-bold text-gradient-animated mb-2">Cargando contenido...</p>
             <p class="text-sm text-base-content/60">Preparando la mejor experiencia</p>
           </div>
         </div>

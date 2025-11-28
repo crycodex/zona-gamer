@@ -14,7 +14,6 @@ import type {
   ComboEmailAccount, 
   ComboSummary, 
   ComboPlatform, 
-  AccountOwner, 
   TelefonoComboSearchResult, 
   CorreoComboSearchResult 
 } from '@/types/combo'
@@ -138,7 +137,7 @@ export function useCombos() {
               comboData = data
             }
             if (Array.isArray(data.cuentas)) {
-              data.cuentas.forEach((cuenta: AccountOwner) => {
+              data.cuentas.forEach((cuenta: import('@/types/game').AccountOwner) => {
                 if (cuenta?.hasStock) {
                   stockCount++
                 }
@@ -198,9 +197,17 @@ export function useCombos() {
       }
 
       const sortedCombos = Array.from(combosMap.values()).sort((a, b) => 
-        a.nombre.localeCompare(b.nombre)
+        a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
       )
-      
+
+      console.log(`✅ Combos cargados para ${plataforma}:`, sortedCombos.length)
+      console.log('📦 Lista de combos:', sortedCombos.map(c => ({ 
+        id: c.id, 
+        nombre: c.nombre, 
+        correos: c.totalCorreos, 
+        stock: c.stockAccounts 
+      })))
+
       combos.value = sortedCombos
       
       // Guardar en cache
