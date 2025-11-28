@@ -3,13 +3,14 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useRoles } from '@/composables/useRoles'
-import { BarChart3, Gamepad2, Home, Phone, Mail } from 'lucide-vue-next'
+import { BarChart3, Gamepad2, Home, Phone, Mail, Package } from 'lucide-vue-next'
 
 // Importar componentes refactorizados
 import StatsOverview from '@/components/admin/StatsOverview.vue'
 import TelefonoSearch from '@/components/admin/TelefonoSearch.vue'
 import CorreoSearch from '@/components/admin/CorreoSearch.vue'
 import GamesConsultationSection from '@/components/employee/GamesConsultationSection.vue'
+import CombosConsultationSection from '@/components/employee/CombosConsultationSection.vue'
 
 import type { GameSummary } from '@/types/game'
 
@@ -18,10 +19,11 @@ const { signOut } = useAuth()
 const { currentUserData, loadUserData } = useRoles()
 
 // Estado para el tab activo
-const activeTab = ref<'stats' | 'telefono' | 'correo' | 'games'>('stats')
+const activeTab = ref<'stats' | 'telefono' | 'correo' | 'games' | 'combos'>('stats')
 
-// Referencia al componente de juegos
+// Referencias a componentes
 const gamesConsultationRef = ref<InstanceType<typeof GamesConsultationSection> | null>(null)
+const combosConsultationRef = ref<InstanceType<typeof CombosConsultationSection> | null>(null)
 
 const handleLogout = async (): Promise<void> => {
   await signOut()
@@ -127,6 +129,13 @@ onMounted(async () => {
             <Gamepad2 :size="18" />
             Consulta de Juegos
           </button>
+          <button 
+            @click="activeTab = 'combos'" 
+            :class="['tab gap-2 transition-all', activeTab === 'combos' ? 'tab-active' : '']"
+          >
+            <Package :size="18" />
+            Consulta de Combos
+          </button>
         </div>
       </div>
     </div>
@@ -160,6 +169,11 @@ onMounted(async () => {
       <!-- Tab: Consulta de Juegos -->
       <div v-if="activeTab === 'games'">
         <GamesConsultationSection ref="gamesConsultationRef" />
+      </div>
+
+      <!-- Tab: Consulta de Combos -->
+      <div v-if="activeTab === 'combos'">
+        <CombosConsultationSection ref="combosConsultationRef" />
       </div>
     </div>
   </div>

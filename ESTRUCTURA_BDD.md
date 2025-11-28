@@ -4,6 +4,7 @@
 
 ### Estructura Principal
 
+#### Juegos
 ```
 games/
 └── PS4 & PS5/
@@ -78,23 +79,76 @@ games/
                     └── createdBy: "uid_del_admin"
 ```
 
+#### Combos
+```
+combos/
+└── PS4 & PS5/
+    └── combos/
+        └── assassins_creed_combo/ (nombre del combo como documento contenedor)
+            └── correos/ (subcolección de correos)
+                ├── z.o.nae.c.l.a.t.am@gmail.com/
+                │   ├── nombre: "Assassins Creed"
+                │   ├── precios: {
+                │   │   ps4Principal: 15,
+                │   │   ps4Secundaria: 12,
+                │   │   ps5Principal: 18,
+                │   │   ps5Secundaria: 14
+                │   │ }
+                │   ├── version: "PS4"
+                │   ├── codigoMaster: "MASTER USA"
+                │   ├── codigosGenerados: []
+                │   ├── fecha: Timestamp (12-05-1980)
+                │   ├── codigo: "90002"
+                │   ├── cuentas: [
+                │   │   {
+                │   │     tipo: "Principal PS4",
+                │   │     nombre: "24830 Ps4",
+                │   │     telefono: "+593 98 148 1407"
+                │   │   },
+                │   │   {
+                │   │     tipo: "Secundaria PS4",
+                │   │     nombre: "9461 Ps4 Revendedor",
+                │   │     telefono: "+593 96 338 2229"
+                │   │   },
+                │   │   {
+                │   │     tipo: "Principal PS5",
+                │   │     nombre: "Luis David A0005",
+                │   │     telefono: "+593 98 982 6032"
+                │   │   }
+                │   │ ]
+                │   ├── createdAt: Timestamp
+                │   ├── updatedAt: Timestamp
+                │   └── createdBy: "uid_del_admin"
+                │
+                └── otro_correo@gmail.com/
+                    └── ... (misma estructura)
+```
+
+**Nota importante sobre combos:**
+- Los combos pueden tener nombres propios (ej: "Combo Premium", "Combo Especial")
+- O pueden referenciar juegos existentes usando el campo `juegoReferenciado` (ID del juego)
+- El formato de archivo .txt para combos es diferente al de juegos (ver sección de formato)
+
 ## 🔑 Explicación de la Estructura
 
-### Nivel 1: `games/` (Colección Root)
-Colección principal que contiene todas las plataformas.
+### Nivel 1: `games/` y `combos/` (Colecciones Root)
+Colecciones principales que contienen todas las plataformas.
 
 ### Nivel 2: `{plataforma}/` (Documento)
 Documento de plataforma (ej: "PS4 & PS5", "PS4", "PS5", "Xbox", "Nintendo Switch").
 
-### Nivel 3: `juegos/` (Subcolección)
-Subcolección que contiene todos los juegos de esa plataforma.
+### Nivel 3: `juegos/` o `combos/` (Subcolección)
+- Para juegos: Subcolección que contiene todos los juegos de esa plataforma
+- Para combos: Subcolección que contiene todos los combos de esa plataforma
 
-### Nivel 4: `{nombre_juego}/` (Documento)
-Documento contenedor del juego (ej: "a_way_out"). Este documento puede estar vacío o contener metadata general.
+### Nivel 4: `{nombre_juego}/` o `{nombre_combo}/` (Documento)
+- Para juegos: Documento contenedor del juego (ej: "a_way_out")
+- Para combos: Documento contenedor del combo (ej: "assassins_creed_combo")
+Este documento puede estar vacío o contener metadata general.
 
 ### Nivel 5: `correos/` (Subcolección)
 **IMPORTANTE**: Aquí es donde está toda la información real. Cada correo es un documento que contiene:
-- Toda la información del juego (nombre, costo, código, etc.)
+- Toda la información del juego/combo (nombre, costo, código, etc.)
 - El código master
 - Los códigos generados
 - Las cuentas con sus dueños y teléfonos
@@ -215,19 +269,21 @@ Cada cuenta tiene:
 ## 🔒 Permisos de Acceso
 
 ### Admin
-- ✅ Ver todos los juegos y correos
-- ✅ Agregar correos a juegos
+- ✅ Ver todos los juegos y combos con sus correos
+- ✅ Agregar correos a juegos y combos
 - ✅ Editar correos existentes
 - ✅ Eliminar correos
-- ✅ Eliminar juegos completos (con todos sus correos)
+- ✅ Eliminar juegos/combos completos (con todos sus correos)
 - ✅ Ver todos los detalles (códigos, cuentas, dueños)
+- ✅ Crear y editar combos (con nombres propios o referenciando juegos)
 
 ### Empleado
-- ✅ Ver todos los juegos y correos
+- ✅ Ver todos los juegos y combos con sus correos
 - ✅ Ver todos los detalles (códigos, cuentas, dueños)
+- ✅ Generar mensajes WhatsApp para combos
 - ❌ Agregar correos
 - ❌ Editar correos
-- ❌ Eliminar correos o juegos
+- ❌ Eliminar correos o juegos/combos
 
 ### Cliente
 - ❌ Sin acceso a la gestión de juegos
@@ -250,11 +306,12 @@ Cada cuenta tiene:
 
 ### 3. **Agregar Correo** (Solo Admin)
    - Formulario para ingresar correo
-   - Precio y código del juego
+   - Precio y código del juego/combo
    - Código Master (obligatorio)
    - Códigos Generados (uno por línea)
    - Cuentas con formato especial: `tipo|nombre|teléfono`
    - Ejemplo: `Principal PS4|19998 Ps4|+593 99 358 6097`
+   - **Para combos**: Parser especial que lee el formato de archivo .txt de combos
 
 ### 4. **Editar Correo** (Solo Admin)
    - Modificar todos los campos excepto el correo
@@ -345,7 +402,9 @@ Estos precios se configuran al crear o editar un juego y se reflejan en el home,
 
 ## 💡 Formato de Datos de Entrada
 
-### Códigos Generados
+### Para Juegos
+
+#### Códigos Generados
 ```
 wGQHtn
 MyEj7B
@@ -358,7 +417,7 @@ YtkdCZ
 ```
 **Un código por línea**
 
-### Cuentas
+#### Cuentas
 ```
 Principal PS4|19998 Ps4|+593 99 358 6097
 Secundaria PS4|Frank Fc PS4 Ibarra|+593 98 777 1379
@@ -372,6 +431,36 @@ Secundaria PS5|Usuario Ps5 Secundaria|+593 98 123 4567
 - `Secundaria PS4`
 - `Principal PS5`
 - `Secundaria PS5`
+
+### Para Combos
+
+El formato del archivo .txt para combos es diferente:
+
+```
+z.o.nae.c.l.a.t.am@gmail.com
+papa1425 Principal PS4 la tiene 24830 Ps4 +593 98 148 1407
+syndicate1425 Secundaria PS4 la tiene 9461 Ps4 Revendedor +593 96 338 2229
+Principal PS5 la tiene Luis David A0005 +593 98 982 6032
+
+ID.wispy-advice8
+Nombre: Assassins Creed
+Costo: $15
+MASTER USA
+12-05-1980
+90002
+```
+
+**Estructura del archivo:**
+- **Línea 1**: Correo electrónico
+- **Líneas 2-4**: Cuentas con formato `usuario tipo cuenta nombre teléfono`
+- **Línea 7**: ID (opcional, se ignora)
+- **Línea 8**: Nombre del combo/juego (formato: `Nombre: Nombre del Combo`)
+- **Línea 9**: Costo (formato: `Costo: $15`)
+- **Línea 10**: Código Master (puede ser "MASTER USA" o el código completo)
+- **Línea 11**: Fecha (formato: `DD-MM-YYYY`)
+- **Línea 12**: Código (número de 5+ dígitos)
+
+El parser automáticamente extrae toda esta información y llena el formulario.
 
 ## ⚠️ Notas Importantes
 
@@ -397,13 +486,20 @@ La búsqueda en la vista de juegos busca por:
 
 ## 📱 Navegación
 
+### Para Juegos
 - **Panel Admin/Empleado** → **Gestión de Juegos** → **Lista de Juegos** → **Correos del Juego** → **Detalles del Correo**
 - Breadcrumb siempre visible
 - Botón "Volver a juegos" en la vista de correos
-- Botón "← Gestión de Juegos" para volver al panel
+
+### Para Combos
+- **Panel Admin/Empleado** → **Gestión de Combos** → **Lista de Combos** → **Correos del Combo** → **Detalles del Correo**
+- Breadcrumb siempre visible
+- Botón "Volver a combos" en la vista de correos
+- Los combos están disponibles tanto en el panel de admin como en el de empleados
 
 ## 🎯 Ejemplo Completo de Flujo
 
+### Flujo para Juegos
 1. Admin entra al sistema
 2. Va a "Gestión de Juegos"
 3. Selecciona plataforma "PS4 & PS5"
@@ -416,3 +512,20 @@ La búsqueda en la vista de juegos busca por:
 10. Ahora hay 4 correos
 11. Click en el ícono de info de un correo
 12. Ve todos los detalles: códigos master, generados, cuentas con dueños
+
+### Flujo para Combos
+1. Admin entra al sistema
+2. Va a "Gestión de Combos"
+3. Selecciona plataforma "PS4 & PS5"
+4. Ve lista de combos (pueden tener nombres propios o referenciar juegos)
+5. Click en "Crear Combo" (opcional: seleccionar juego existente para referenciar)
+6. Ingresa nombre del combo, precios, foto, etc.
+7. Guarda el combo
+8. Click en "Ver Correos" del combo
+9. Click "+ Agregar Correo"
+10. Arrastra archivo .txt con formato de combo o ingresa manualmente
+11. El parser automáticamente extrae: correo, cuentas, nombre, costo, código master, fecha, código
+12. Guarda
+13. Ahora el combo tiene correos asociados
+14. Click en el ícono de info de un correo
+15. Ve todos los detalles: códigos master, generados, cuentas con dueños

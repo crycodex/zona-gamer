@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useRoles } from '@/composables/useRoles'
-import { BarChart3, Users, Gamepad2, Home, Phone, Mail, FileText } from 'lucide-vue-next'
+import { BarChart3, Users, Gamepad2, Home, Phone, Mail, FileText, Package } from 'lucide-vue-next'
 
 // Importar componentes refactorizados
 import StatsOverview from '@/components/admin/StatsOverview.vue'
@@ -11,6 +11,7 @@ import UsersManagement from '@/components/admin/UsersManagement.vue'
 import TelefonoSearch from '@/components/admin/TelefonoSearch.vue'
 import CorreoSearch from '@/components/admin/CorreoSearch.vue'
 import GamesManagementSection from '@/components/admin/GamesManagementSection.vue'
+import CombosManagementSection from '@/components/admin/CombosManagementSection.vue'
 import ReportesSection from '@/components/admin/ReportesSection.vue'
 
 import type { GameSummary } from '@/types/game'
@@ -20,10 +21,11 @@ const { signOut } = useAuth()
 const { currentUserData, loadUserData } = useRoles()
 
 // Estado para el tab activo
-const activeTab = ref<'stats' | 'users' | 'telefono' | 'correo' | 'games' | 'reportes'>('stats')
+const activeTab = ref<'stats' | 'users' | 'telefono' | 'correo' | 'games' | 'combos' | 'reportes'>('stats')
 
 // Referencias a componentes
 const gamesManagementRef = ref<InstanceType<typeof GamesManagementSection> | null>(null)
+const combosManagementRef = ref<InstanceType<typeof CombosManagementSection> | null>(null)
 
 const handleLogout = async (): Promise<void> => {
   await signOut()
@@ -144,6 +146,13 @@ onMounted(async () => {
             Gestión de Juegos
           </button>
           <button 
+            @click="activeTab = 'combos'" 
+            :class="['tab gap-2 transition-all', activeTab === 'combos' ? 'tab-active' : '']"
+          >
+            <Package :size="18" />
+            Gestión de Combos
+          </button>
+          <button 
             @click="activeTab = 'reportes'" 
             :class="['tab gap-2 transition-all', activeTab === 'reportes' ? 'tab-active' : '']"
           >
@@ -182,6 +191,11 @@ onMounted(async () => {
       <!-- Tab: Gestión de Juegos -->
       <div v-if="activeTab === 'games'">
         <GamesManagementSection ref="gamesManagementRef" />
+      </div>
+
+      <!-- Tab: Gestión de Combos -->
+      <div v-if="activeTab === 'combos'">
+        <CombosManagementSection ref="combosManagementRef" />
       </div>
 
       <!-- Tab: Reportes -->
