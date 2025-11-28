@@ -4,7 +4,7 @@ import type { AppUser } from '@/types/user'
 
 interface Props {
   show: boolean
-  item: { tipo: 'juego' | 'correo' | 'usuario', data: any } | null
+  item: { tipo: 'juego' | 'correo' | 'usuario' | 'combo', data: any } | null
   isDeleting: boolean
   error: string
 }
@@ -19,7 +19,7 @@ const emit = defineEmits<{
 const getItemName = (): string => {
   if (!props.item) return ''
   
-  if (props.item.tipo === 'juego') {
+  if (props.item.tipo === 'juego' || props.item.tipo === 'combo') {
     return props.item.data.nombre
   } else if (props.item.tipo === 'correo') {
     return props.item.data.correo
@@ -32,7 +32,7 @@ const getItemName = (): string => {
 const getItemDescription = (): string => {
   if (!props.item) return ''
   
-  if (props.item.tipo === 'juego') {
+  if (props.item.tipo === 'juego' || props.item.tipo === 'combo') {
     return `ID: ${props.item.data.id}`
   } else if (props.item.tipo === 'correo') {
     return `Código: ${props.item.data.codigo}`
@@ -46,6 +46,7 @@ const getTipoLabel = (): string => {
   if (!props.item) return ''
   
   if (props.item.tipo === 'juego') return 'juego completo'
+  if (props.item.tipo === 'combo') return 'combo completo'
   if (props.item.tipo === 'correo') return 'correo'
   if (props.item.tipo === 'usuario') return 'usuario'
   return ''

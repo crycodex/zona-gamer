@@ -78,7 +78,7 @@ const correoSeleccionadoParaMensaje = ref<ComboEmailAccount | null>(null)
 
 // Estados para eliminar
 const showDeleteConfirm = ref(false)
-const deletingItem = ref<{ tipo: 'juego' | 'correo', data: any } | null>(null)
+const deletingItem = ref<{ tipo: 'combo' | 'correo', data: any } | null>(null)
 const isDeletingItem = ref(false)
 const deleteError = ref('')
 const deleteSuccess = ref('')

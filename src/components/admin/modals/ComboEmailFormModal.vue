@@ -192,7 +192,7 @@ const parsearArchivoTxt = (contenido: string): void => {
       
       // Si no hay nombre pero hay teléfono, intentar extraer de otra forma
       if (!nombre && telefono) {
-        const partes = linea.split(telefono)[0].trim().split(/\s+/)
+        const partes = linea.split(telefono)[0]?.trim().split(/\s+/) || []
         // Buscar el nombre después del tipo de cuenta
         const tipoIndex = partes.findIndex(p => p.includes('PS4') || p.includes('PS5'))
         if (tipoIndex >= 0 && tipoIndex < partes.length - 1) {

@@ -1,4 +1,7 @@
-import type { GamePlatform, AccountOwner, GamePrices, PromocionType } from './game'
+import type { GamePlatform, AccountOwner, GamePrices, PromocionType, AccountType } from './game'
+
+// Re-exportar tipos necesarios
+export type { AccountOwner, AccountType }
 
 // Los combos usan los mismos tipos base que los juegos
 export type ComboPlatform = GamePlatform
