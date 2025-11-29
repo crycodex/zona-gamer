@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useGames } from '@/composables/useGames'
-import type { ComboSummary, ComboPlatform } from '@/types/combo'
+import type { ComboSummary, ComboPlatform, ComboGame } from '@/types/combo'
 import type { PromocionType } from '@/types/game'
-import type { GamePrices, GameSummary } from '@/types/game'
+import type { GameSummary } from '@/types/game'
+import { Plus, Trash2 } from 'lucide-vue-next'
 
 export interface ComboFormData {
   nombre: string
-  precios: GamePrices
+  precio: number
   version: ComboPlatform
   foto?: string
   tipoPromocion: PromocionType
+  juegos: ComboGame[]
   juegoReferenciado?: string // ID del juego referenciado (opcional)
-  // Legacy: mantener costo para compatibilidad durante migración
-  costo?: number
 }
 
 interface Props {
@@ -40,21 +40,18 @@ const { games, cargarJuegos } = useGames()
 // Form data
 const formData = ref<ComboFormData>({
   nombre: '',
-  precios: {
-    ps4Principal: 0,
-    ps4Secundaria: 0,
-    ps5Principal: 0,
-    ps5Secundaria: 0
-  },
+  precio: 0,
   version: 'PS4 & PS5',
   foto: '',
   tipoPromocion: 'ninguna',
+  juegos: [],
   juegoReferenciado: undefined
 })
 
-// Estado para tipo de nombre
-const tipoNombre = ref<'propio' | 'juego'>('propio')
-const juegoSeleccionadoRef = ref<GameSummary | null>(null)
+// Estados para agregar juegos al combo
+const tipoJuegoNuevo = ref<'catalogo' | 'manual'>('catalogo')
+const juegoDelCatalogo = ref<GameSummary | null>(null)
+const nombreJuegoManual = ref('')
 
 // Resetear form cuando se abre/cierra el modal o cambia el combo
 watch(() => props.show, async (newVal) => {
@@ -73,83 +70,69 @@ watch(() => props.show, async (newVal) => {
       // Editar combo existente
       formData.value = {
         nombre: props.combo.nombre,
-        precios: props.combo.precios || {
-          ps4Principal: props.combo.costo || 0,
-          ps4Secundaria: props.combo.costo || 0,
-          ps5Principal: props.combo.costo || 0,
-          ps5Secundaria: props.combo.costo || 0
-        },
+        precio: props.combo.precio || props.combo.costo || 0,
         version: props.combo.version,
         foto: props.combo.foto || '',
         tipoPromocion: props.combo.tipoPromocion || 'ninguna',
+        juegos: props.combo.juegos || [],
         juegoReferenciado: props.combo.juegoReferenciado
-      }
-      
-      // Determinar tipo de nombre
-      if (props.combo.juegoReferenciado) {
-        tipoNombre.value = 'juego'
-        juegoSeleccionadoRef.value = games.value.find(g => g.id === props.combo?.juegoReferenciado) || null
-      } else {
-        tipoNombre.value = 'propio'
       }
     } else {
       // Crear nuevo combo
       formData.value = {
         nombre: '',
-        precios: {
-          ps4Principal: 0,
-          ps4Secundaria: 0,
-          ps5Principal: 0,
-          ps5Secundaria: 0
-        },
+        precio: 0,
         version: 'PS4 & PS5',
         foto: '',
         tipoPromocion: 'ninguna',
+        juegos: [],
         juegoReferenciado: undefined
       }
-      tipoNombre.value = 'propio'
-      juegoSeleccionadoRef.value = null
     }
+    
+    // Resetear estados de juegos nuevos
+    tipoJuegoNuevo.value = 'catalogo'
+    juegoDelCatalogo.value = null
+    nombreJuegoManual.value = ''
   }
 })
 
-// Watcher para actualizar nombre cuando se selecciona un juego
-watch(() => juegoSeleccionadoRef.value, (juego) => {
-  if (juego && tipoNombre.value === 'juego') {
-    formData.value.nombre = juego.nombre
-    formData.value.juegoReferenciado = juego.id
-    // Opcionalmente copiar precios del juego
-    if (juego.precios) {
-      formData.value.precios = { ...juego.precios }
+// Función para agregar juego al combo
+const agregarJuego = () => {
+  if (tipoJuegoNuevo.value === 'catalogo' && juegoDelCatalogo.value) {
+    // Verificar que no esté duplicado
+    const existe = formData.value.juegos.some(j => j.id === juegoDelCatalogo.value!.id)
+    if (existe) {
+      alert('Este juego ya está en el combo')
+      return
     }
-  } else {
-    formData.value.juegoReferenciado = undefined
-  }
-})
-
-// Watcher para resetear precios de la plataforma no seleccionada (solo al crear, no al editar)
-watch(() => formData.value.version, (newVersion) => {
-  if (!props.combo) { // Solo al crear, no al editar
-    if (newVersion === 'PS4') {
-      // Resetear precios PS5
-      formData.value.precios.ps5Principal = 0
-      formData.value.precios.ps5Secundaria = 0
-    } else if (newVersion === 'PS5') {
-      // Resetear precios PS4
-      formData.value.precios.ps4Principal = 0
-      formData.value.precios.ps4Secundaria = 0
+    
+    formData.value.juegos.push({
+      id: juegoDelCatalogo.value.id,
+      nombre: juegoDelCatalogo.value.nombre,
+      tipo: 'catalogo'
+    })
+    juegoDelCatalogo.value = null
+  } else if (tipoJuegoNuevo.value === 'manual' && nombreJuegoManual.value.trim()) {
+    // Verificar que no esté duplicado
+    const existe = formData.value.juegos.some(j => j.nombre.toLowerCase() === nombreJuegoManual.value.toLowerCase().trim())
+    if (existe) {
+      alert('Ya existe un juego con ese nombre en el combo')
+      return
     }
+    
+    formData.value.juegos.push({
+      nombre: nombreJuegoManual.value.trim(),
+      tipo: 'manual'
+    })
+    nombreJuegoManual.value = ''
   }
-})
+}
 
-// Computed para determinar qué precios mostrar según la plataforma
-const mostrarPreciosPS4 = computed(() => {
-  return formData.value.version === 'PS4' || formData.value.version === 'PS4 & PS5'
-})
-
-const mostrarPreciosPS5 = computed(() => {
-  return formData.value.version === 'PS5' || formData.value.version === 'PS4 & PS5'
-})
+// Función para eliminar juego del combo
+const eliminarJuego = (index: number) => {
+  formData.value.juegos.splice(index, 1)
+}
 
 const handleSubmit = () => {
   if (!formData.value.nombre.trim()) {
@@ -157,24 +140,13 @@ const handleSubmit = () => {
     return
   }
   
-  // Validar precios según la plataforma seleccionada
-  const precios = formData.value.precios
-  let preciosInvalidos = false
-  
-  if (mostrarPreciosPS4.value) {
-    if (precios.ps4Principal <= 0 || precios.ps4Secundaria <= 0) {
-      preciosInvalidos = true
-    }
+  if (formData.value.precio <= 0) {
+    alert('El precio debe ser mayor a 0')
+    return
   }
   
-  if (mostrarPreciosPS5.value) {
-    if (precios.ps5Principal <= 0 || precios.ps5Secundaria <= 0) {
-      preciosInvalidos = true
-    }
-  }
-  
-  if (preciosInvalidos) {
-    alert('Todos los precios de la plataforma seleccionada deben ser mayores a 0')
+  if (formData.value.juegos.length === 0) {
+    alert('Debes agregar al menos un juego al combo')
     return
   }
 
@@ -253,7 +225,7 @@ onMounted(async () => {
 
 <template>
   <dialog :class="['modal', { 'modal-open': show }]">
-    <div class="modal-box max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 my-auto">
+    <div class="modal-box max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6 my-auto">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6 pb-4 border-b border-base-300">
         <div class="flex items-center gap-3">
@@ -295,53 +267,6 @@ onMounted(async () => {
             <h4 class="font-bold text-lg text-base-content">Información Básica</h4>
           </div>
 
-          <!-- Tipo de nombre -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text font-semibold">Tipo de Nombre</span>
-            </label>
-            <div class="join w-full">
-              <button
-                type="button"
-                :class="['btn join-item flex-1', tipoNombre === 'propio' ? 'btn-primary' : 'btn-outline']"
-                @click="tipoNombre = 'propio'; juegoSeleccionadoRef = null; formData.juegoReferenciado = undefined"
-                :disabled="!!combo"
-              >
-                Nombre Propio
-              </button>
-              <button
-                type="button"
-                :class="['btn join-item flex-1', tipoNombre === 'juego' ? 'btn-primary' : 'btn-outline']"
-                @click="tipoNombre = 'juego'"
-                :disabled="!!combo"
-              >
-                Usar Juego Existente
-              </button>
-            </div>
-          </div>
-
-          <!-- Selector de juego (si se selecciona usar juego existente) -->
-          <div v-if="tipoNombre === 'juego'" class="form-control">
-            <label class="label">
-              <span class="label-text font-semibold">Seleccionar Juego *</span>
-            </label>
-            <select
-              v-model="juegoSeleccionadoRef"
-              class="select select-bordered w-full"
-              :disabled="!!combo"
-              required
-            >
-              <option :value="null">Selecciona un juego...</option>
-              <option
-                v-for="juego in games"
-                :key="juego.id"
-                :value="juego"
-              >
-                {{ juego.nombre }}
-              </option>
-            </select>
-          </div>
-
           <!-- Nombre del combo -->
           <div class="form-control">
             <label class="label">
@@ -354,130 +279,169 @@ onMounted(async () => {
               type="text"
               placeholder="Ej: Combo Assassins Creed, Combo Premium, etc."
               class="input input-bordered w-full focus:input-primary"
-              :disabled="tipoNombre === 'juego' || !!combo"
+              :disabled="!!combo"
               required
             />
             <label class="label">
               <span class="label-text-alt text-info">
-                {{ tipoNombre === 'juego' ? 'El nombre se copiará del juego seleccionado' : 'Ingresa un nombre único para el combo' }}
+                Ingresa un nombre único para el combo
               </span>
             </label>
           </div>
 
-          <!-- Plataforma -->
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text font-semibold flex items-center gap-2">
-                Plataforma *
-              </span>
-            </label>
-            <select v-model="formData.version" class="select select-bordered w-full focus:select-primary">
-              <option value="PS4 & PS5">PS4 & PS5</option>
-              <option value="PS4">PS4</option>
-              <option value="PS5">PS5</option>
-            </select>
+          <!-- Plataforma y Precio en una fila -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Plataforma -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold flex items-center gap-2">
+                  Plataforma *
+                </span>
+              </label>
+              <select v-model="formData.version" class="select select-bordered w-full focus:select-primary">
+                <option value="PS4 & PS5">PS4 & PS5</option>
+                <option value="PS4">PS4</option>
+                <option value="PS5">PS5</option>
+              </select>
+            </div>
+
+            <!-- Precio Global -->
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text font-semibold flex items-center gap-2">
+                  Precio Global (USD) *
+                </span>
+              </label>
+              <div class="relative">
+                <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60 text-lg">$</span>
+                <input
+                  v-model.number="formData.precio"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  class="input input-bordered w-full pl-10 focus:input-primary text-lg"
+                  required
+                />
+              </div>
+              <label class="label">
+                <span class="label-text-alt text-info">Precio único para todas las cuentas</span>
+              </label>
+            </div>
           </div>
         </div>
 
-        <!-- Precios por tipo de cuenta -->
+        <!-- Juegos del Combo -->
         <div class="space-y-4">
           <div class="flex items-center gap-2 mb-4">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
-            <h4 class="font-bold text-lg text-base-content">Precios por Tipo de Cuenta (USD) *</h4>
+            <h4 class="font-bold text-lg text-base-content">Juegos Incluidos en el Combo *</h4>
           </div>
-          
+
           <div class="card bg-base-200 border border-base-300 shadow-lg">
             <div class="card-body p-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- PS4 Principal -->
-                <div v-if="mostrarPreciosPS4" class="form-control">
-                  <label class="label">
-                    <span class="label-text font-semibold flex items-center gap-2">
-                      <span class="badge badge-primary badge-lg px-3 py-1">PS4</span>
-                      <span>Principal</span>
-                    </span>
-                  </label>
-                  <div class="relative">
-                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
-                    <input
-                      v-model.number="formData.precios.ps4Principal"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      class="input input-bordered w-full pl-8 focus:input-primary"
-                      required
-                    />
-                  </div>
+              <!-- Selector tipo de juego -->
+              <div class="form-control mb-4">
+                <label class="label">
+                  <span class="label-text font-semibold">Tipo de Juego</span>
+                </label>
+                <div class="join w-full">
+                  <button
+                    type="button"
+                    :class="['btn join-item flex-1', tipoJuegoNuevo === 'catalogo' ? 'btn-primary' : 'btn-outline']"
+                    @click="tipoJuegoNuevo = 'catalogo'"
+                  >
+                    Del Catálogo
+                  </button>
+                  <button
+                    type="button"
+                    :class="['btn join-item flex-1', tipoJuegoNuevo === 'manual' ? 'btn-primary' : 'btn-outline']"
+                    @click="tipoJuegoNuevo = 'manual'"
+                  >
+                    Nombre Manual
+                  </button>
                 </div>
+              </div>
 
-                <!-- PS4 Secundaria -->
-                <div v-if="mostrarPreciosPS4" class="form-control">
-                  <label class="label">
-                    <span class="label-text font-semibold flex items-center gap-2">
-                      <span class="badge badge-primary badge-lg px-3 py-1">PS4</span>
-                      <span>Secundaria</span>
-                    </span>
-                  </label>
-                  <div class="relative">
-                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
-                    <input
-                      v-model.number="formData.precios.ps4Secundaria"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      class="input input-bordered w-full pl-8 focus:input-primary"
-                      required
-                    />
-                  </div>
-                </div>
+              <!-- Agregar juego del catálogo -->
+              <div v-if="tipoJuegoNuevo === 'catalogo'" class="flex gap-2">
+                <select
+                  v-model="juegoDelCatalogo"
+                  class="select select-bordered flex-1"
+                >
+                  <option :value="null">Selecciona un juego...</option>
+                  <option
+                    v-for="juego in games"
+                    :key="juego.id"
+                    :value="juego"
+                  >
+                    {{ juego.nombre }}
+                  </option>
+                </select>
+                <button
+                  type="button"
+                  class="btn btn-primary gap-2"
+                  @click="agregarJuego"
+                  :disabled="!juegoDelCatalogo"
+                >
+                  <Plus :size="18" />
+                  Agregar
+                </button>
+              </div>
 
-                <!-- PS5 Principal -->
-                <div v-if="mostrarPreciosPS5" class="form-control">
-                  <label class="label">
-                    <span class="label-text font-semibold flex items-center gap-2">
-                      <span class="badge badge-success badge-lg px-3 py-1">PS5</span>
-                      <span>Principal</span>
-                    </span>
-                  </label>
-                  <div class="relative">
-                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
-                    <input
-                      v-model.number="formData.precios.ps5Principal"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      class="input input-bordered w-full pl-8 focus:input-primary"
-                      required
-                    />
-                  </div>
-                </div>
+              <!-- Agregar juego manual -->
+              <div v-else class="flex gap-2">
+                <input
+                  v-model="nombreJuegoManual"
+                  type="text"
+                  placeholder="Nombre del juego"
+                  class="input input-bordered flex-1"
+                  @keyup.enter="agregarJuego"
+                />
+                <button
+                  type="button"
+                  class="btn btn-primary gap-2"
+                  @click="agregarJuego"
+                  :disabled="!nombreJuegoManual.trim()"
+                >
+                  <Plus :size="18" />
+                  Agregar
+                </button>
+              </div>
 
-                <!-- PS5 Secundaria -->
-                <div v-if="mostrarPreciosPS5" class="form-control">
-                  <label class="label">
-                    <span class="label-text font-semibold flex items-center gap-2">
-                      <span class="badge badge-success badge-lg px-3 py-1">PS5</span>
-                      <span>Secundaria</span>
+              <!-- Lista de juegos agregados -->
+              <div class="divider">Juegos Agregados ({{ formData.juegos.length }})</div>
+
+              <div v-if="formData.juegos.length > 0" class="space-y-2">
+                <div
+                  v-for="(juego, index) in formData.juegos"
+                  :key="index"
+                  class="flex items-center justify-between bg-base-300 p-3 rounded-lg hover:bg-base-100 transition-colors"
+                >
+                  <div class="flex items-center gap-3">
+                    <span class="badge" :class="juego.tipo === 'catalogo' ? 'badge-primary' : 'badge-secondary'">
+                      {{ juego.tipo === 'catalogo' ? 'Catálogo' : 'Manual' }}
                     </span>
-                  </label>
-                  <div class="relative">
-                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
-                    <input
-                      v-model.number="formData.precios.ps5Secundaria"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      class="input input-bordered w-full pl-8 focus:input-primary"
-                      required
-                    />
+                    <span class="font-medium">{{ juego.nombre }}</span>
                   </div>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-ghost btn-circle text-error hover:bg-error/20"
+                    @click="eliminarJuego(index)"
+                    title="Eliminar juego"
+                  >
+                    <Trash2 :size="16" />
+                  </button>
                 </div>
+              </div>
+              <div v-else class="text-center text-sm text-base-content/50 py-8">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-2 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+                <p>No hay juegos agregados al combo</p>
+                <p class="text-xs mt-1">Agrega juegos del catálogo o con nombre manual</p>
               </div>
             </div>
           </div>
@@ -537,7 +501,7 @@ onMounted(async () => {
             </label>
           </div>
 
-          <!-- Vista previa de imagen mejorada -->
+          <!-- Vista previa de imagen -->
           <div v-if="formData.foto" class="card bg-base-200 border border-base-300 shadow-lg">
             <div class="card-body p-6">
               <h4 class="font-semibold mb-4 flex items-center gap-2">
@@ -619,4 +583,3 @@ onMounted(async () => {
     </form>
   </dialog>
 </template>
-

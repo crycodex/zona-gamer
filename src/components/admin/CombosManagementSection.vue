@@ -523,14 +523,15 @@ const handleSaveCombo = async (data: ComboFormData): Promise<void> => {
         foto: data.foto,
         version: data.version,
         tipoPromocion: data.tipoPromocion,
-        precios: data.precios,
+        precio: data.precio,
+        juegos: data.juegos,
         juegoReferenciado: data.juegoReferenciado
       })
       successMessage.value = 'Combo actualizado exitosamente'
     } else {
       // Crear nuevo combo
       const isOffert = data.tipoPromocion === 'oferta'
-      await crearCombo('PS4 & PS5', data.nombre, data.foto, isOffert, data.version, data.precios, data.juegoReferenciado)
+      await crearCombo('PS4 & PS5', data.nombre, data.foto, isOffert, data.version, data.precio, data.juegos, data.juegoReferenciado)
       successMessage.value = 'Combo creado exitosamente'
     }
     
@@ -575,6 +576,7 @@ const handleSaveEmail = async (data: ComboEmailFormData): Promise<void> => {
       // Actualizar correo existente
       await actualizarCorreoCombo('PS4 & PS5', comboSeleccionado.value.id, data.correo, {
         nombre: data.nombre,
+        precio: data.precio,
         precios: data.precios,
         version: data.version,
         codigoMaster: data.codigoMaster,
@@ -589,6 +591,7 @@ const handleSaveEmail = async (data: ComboEmailFormData): Promise<void> => {
       // Crear nuevo correo
       await crearCorreoCombo('PS4 & PS5', comboSeleccionado.value.id, data.correo, {
         nombre: data.nombre,
+        precio: data.precio,
         precios: data.precios,
         version: data.version,
         codigoMaster: data.codigoMaster,
@@ -970,11 +973,11 @@ defineExpose({
                   <div class="font-bold">{{ combo.nombre }}</div>
                 </td>
                 <td>
-                  <div class="flex flex-col gap-1">
-                    <span class="badge badge-sm badge-primary">PS4 P: {{ formatearPrecio(combo.precios.ps4Principal) }}</span>
-                    <span class="badge badge-sm badge-secondary">PS4 S: {{ formatearPrecio(combo.precios.ps4Secundaria) }}</span>
-                    <span class="badge badge-sm badge-success">PS5 P: {{ formatearPrecio(combo.precios.ps5Principal) }}</span>
-                    <span class="badge badge-sm badge-accent">PS5 S: {{ formatearPrecio(combo.precios.ps5Secundaria) }}</span>
+                  <div class="font-semibold text-lg">
+                    {{ formatearPrecio(combo.precio || combo.costo || 0) }}
+                  </div>
+                  <div v-if="combo.juegos && combo.juegos.length > 0" class="text-xs text-base-content/60 mt-1">
+                    {{ combo.juegos.length }} juego{{ combo.juegos.length !== 1 ? 's' : '' }}
                   </div>
                 </td>
                 <td><span class="badge badge-info">{{ combo.totalCorreos }}</span></td>

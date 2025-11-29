@@ -28,32 +28,19 @@ watch(combos, (newCombos) => {
   })))
 }, { immediate: true })
 
-// Obtener el precio mínimo de un combo
-const getPrecioMinimo = (combo: ComboSummary): number => {
-  return Math.min(
-    combo.precios.ps4Principal,
-    combo.precios.ps4Secundaria,
-    combo.precios.ps5Principal,
-    combo.precios.ps5Secundaria
-  )
+// Obtener el precio del combo
+const getPrecioCombo = (combo: ComboSummary): number => {
+  return combo.precio || combo.costo || 0
 }
 
-// Obtener el precio máximo de un combo (para calcular descuento)
-const getPrecioMaximo = (combo: ComboSummary): number => {
-  return Math.max(
-    combo.precios.ps4Principal,
-    combo.precios.ps4Secundaria,
-    combo.precios.ps5Principal,
-    combo.precios.ps5Secundaria
-  )
-}
-
-// Calcular descuento basado en la diferencia entre precio máximo y mínimo
+// Calcular descuento si está en promoción
 const calcularDescuento = (combo: ComboSummary): number => {
-  const precioMin = getPrecioMinimo(combo)
-  const precioMax = getPrecioMaximo(combo)
-  if (precioMax === 0) return 0
-  return Math.round(((precioMax - precioMin) / precioMax) * 100)
+  // Si hay descuento configurado, usarlo
+  if (combo.descuento) return combo.descuento
+  // Si está en oferta, mostrar un descuento por defecto
+  if (combo.tipoPromocion === 'oferta' || combo.isOffert) return 15
+  if (combo.tipoPromocion === 'promocion') return 10
+  return 0
 }
 
 const formatearPrecio = (precio: number): string => {
@@ -164,38 +151,49 @@ const agregarComboAlCarrito = (combo: ComboSummary, accountType: AccountType = '
               </div>
             </div>
 
-            <!-- Precios -->
+            <!-- Juegos incluidos -->
             <div class="mb-4 pt-4 border-t border-white/10">
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-base-content/60">PS4 Principal:</span>
-                  <span class="text-sm font-semibold">{{ formatearPrecio(combo.precios.ps4Principal) }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-base-content/60">PS4 Secundaria:</span>
-                  <span class="text-sm font-semibold">{{ formatearPrecio(combo.precios.ps4Secundaria) }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-base-content/60">PS5 Principal:</span>
-                  <span class="text-sm font-semibold">{{ formatearPrecio(combo.precios.ps5Principal) }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-xs text-base-content/60">PS5 Secundaria:</span>
-                  <span class="text-sm font-semibold">{{ formatearPrecio(combo.precios.ps5Secundaria) }}</span>
+              <div class="mb-3">
+                <h4 class="font-bold text-sm text-base-content/80 mb-2 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                  Juegos Incluidos ({{ combo.juegos?.length || 0 }})
+                </h4>
+              </div>
+              
+              <div v-if="combo.juegos && combo.juegos.length > 0" class="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
+                <div
+                  v-for="(juego, index) in combo.juegos"
+                  :key="index"
+                  class="flex items-center gap-2 bg-base-200 px-3 py-2 rounded-lg text-sm"
+                >
+                  <div class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-error"></div>
+                  <span class="flex-1 line-clamp-1">{{ juego.nombre }}</span>
+                  <span 
+                    v-if="juego.tipo === 'catalogo'" 
+                    class="badge badge-xs badge-primary opacity-60"
+                  >
+                    Catálogo
+                  </span>
                 </div>
               </div>
               
-              <!-- Precio destacado (mínimo) -->
+              <div v-else class="text-center py-4 text-sm text-base-content/50">
+                No hay juegos especificados
+              </div>
+              
+              <!-- Precio del combo -->
               <div class="mt-4 pt-4 border-t border-white/10">
                 <div class="flex items-center justify-between">
                   <div>
-                    <p class="text-xs text-base-content/60">Desde</p>
+                    <p class="text-xs text-base-content/60">Precio del Combo</p>
                     <p class="text-2xl font-black text-error">
-                      {{ formatearPrecio(getPrecioMinimo(combo)) }}
+                      {{ formatearPrecio(getPrecioCombo(combo)) }}
                     </p>
                   </div>
                   <div v-if="calcularDescuento(combo) > 0" class="badge badge-success badge-lg">
-                    Ahorra {{ calcularDescuento(combo) }}%
+                    -{{ calcularDescuento(combo) }}%
                   </div>
                 </div>
               </div>
@@ -233,12 +231,42 @@ const agregarComboAlCarrito = (combo: ComboSummary, accountType: AccountType = '
 </template>
 
 <style scoped>
+.line-clamp-1 {
+  display: -webkit-box;
+  line-clamp: 1;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .line-clamp-2 {
   display: -webkit-box;
   line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(239, 68, 68, 0.5) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(239, 68, 68, 0.5);
+  border-radius: 20px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(239, 68, 68, 0.7);
 }
 </style>
 

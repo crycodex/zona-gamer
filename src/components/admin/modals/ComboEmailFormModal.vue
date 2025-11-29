@@ -7,6 +7,7 @@ import type { GamePrices } from '@/types/game'
 export interface ComboEmailFormData {
   correo: string
   nombre: string
+  precio: number
   precios: GamePrices
   version: ComboPlatform
   codigoMaster: string
@@ -44,6 +45,7 @@ const emit = defineEmits<{
 const formData = ref<ComboEmailFormData>({
   correo: '',
   nombre: '',
+  precio: 0,
   precios: {
     ps4Principal: 0,
     ps4Secundaria: 0,
@@ -78,14 +80,16 @@ watch(() => props.show, (newVal) => {
   if (newVal) {
     if (props.email) {
       // Editar correo existente
+      const precio = props.email.precio || props.email.costo || 0
       formData.value = {
         correo: props.email.correo,
         nombre: props.email.nombre,
+        precio,
         precios: props.email.precios || {
-          ps4Principal: props.email.costo || 0,
-          ps4Secundaria: props.email.costo || 0,
-          ps5Principal: props.email.costo || 0,
-          ps5Secundaria: props.email.costo || 0
+          ps4Principal: precio,
+          ps4Secundaria: precio,
+          ps5Principal: precio,
+          ps5Secundaria: precio
         },
         costo: props.email.costo, // Legacy
         version: props.email.version,
@@ -97,10 +101,12 @@ watch(() => props.show, (newVal) => {
         fecha: props.email.fecha
       }
     } else {
-      // Crear nuevo correo
+      // Crear nuevo correo - usar el precio del combo
+      const precio = props.comboPrecios.ps4Principal || 0
       formData.value = {
         correo: '',
         nombre: props.comboName,
+        precio,
         precios: { ...props.comboPrecios },
         version: props.comboVersion,
         codigoMaster: '',

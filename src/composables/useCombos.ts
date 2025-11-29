@@ -166,16 +166,20 @@ export function useCombos() {
           tipoPromocion = 'oferta'
         }
 
-        // Usar los precios del documento principal si existen, sino del primer correo, sino valores por defecto
-        const preciosCombo = comboDocData.precios || comboData?.precios || {
-          ps4Principal: comboDocData.costo || comboData?.costo || 0,
-          ps4Secundaria: comboDocData.costo || comboData?.costo || 0,
-          ps5Principal: comboDocData.costo || comboData?.costo || 0,
-          ps5Secundaria: comboDocData.costo || comboData?.costo || 0
-        }
+        // Usar el precio del documento principal si existe, sino del costo legacy
+        const precioCombo = comboDocData.precio !== undefined ? comboDocData.precio : (comboDocData.costo !== undefined ? comboDocData.costo : (comboData?.costo || 0))
         
-        // Legacy: mantener costo para compatibilidad
-        const costoCombo = comboDocData.costo !== undefined ? comboDocData.costo : (comboData?.costo || 0)
+        // Legacy: mantener precios y costo para compatibilidad
+        const preciosCombo = comboDocData.precios || comboData?.precios || {
+          ps4Principal: precioCombo,
+          ps4Secundaria: precioCombo,
+          ps5Principal: precioCombo,
+          ps5Secundaria: precioCombo
+        }
+        const costoCombo = precioCombo
+        
+        // Obtener juegos del combo
+        const juegosCombo = comboDocData.juegos || []
         
         // Usar la version del documento principal si existe, sino usar la plataforma actual o del primer correo
         const versionCombo = comboDocData.version || comboData?.version || plataforma
@@ -183,7 +187,8 @@ export function useCombos() {
         combosMap.set(comboId, {
           id: comboId,
           nombre: comboDocData.nombre || comboData?.nombre || nombreFromId,
-          precios: preciosCombo,
+          precio: precioCombo,
+          precios: preciosCombo, // Legacy: mantener para compatibilidad
           costo: costoCombo, // Legacy: mantener para compatibilidad
           version: versionCombo,
           foto: comboDocData.foto || '',
@@ -192,6 +197,7 @@ export function useCombos() {
           totalCorreos: correos.length,
           correos,
           stockAccounts: stockCount,
+          juegos: juegosCombo,
           juegoReferenciado: comboDocData.juegoReferenciado
         })
       }
@@ -244,18 +250,21 @@ export function useCombos() {
 
       return querySnapshot.docs.map((doc) => {
         const data = doc.data()
+        // Determinar precio: usar precio si existe, sino costo legacy
+        const precio = data.precio !== undefined ? data.precio : (data.costo || 0)
         // Manejar migración: si no hay precios, usar costo legacy
         const precios = data.precios || {
-          ps4Principal: data.costo || 0,
-          ps4Secundaria: data.costo || 0,
-          ps5Principal: data.costo || 0,
-          ps5Secundaria: data.costo || 0
+          ps4Principal: precio,
+          ps4Secundaria: precio,
+          ps5Principal: precio,
+          ps5Secundaria: precio
         }
         return {
           correo: doc.id,
           nombre: data.nombre || '',
+          precio,
           precios,
-          costo: data.costo || 0, // Legacy: mantener para compatibilidad
+          costo: data.costo || precio, // Legacy: mantener para compatibilidad
           version: data.version || plataforma,
           codigoMaster: data.codigoMaster || '',
           codigosGenerados: data.codigosGenerados || [],
@@ -288,18 +297,21 @@ export function useCombos() {
       }
 
       const data = correoDoc.data()
+      // Determinar precio: usar precio si existe, sino costo legacy
+      const precio = data.precio !== undefined ? data.precio : (data.costo || 0)
       // Manejar migración: si no hay precios, usar costo legacy
       const precios = data.precios || {
-        ps4Principal: data.costo || 0,
-        ps4Secundaria: data.costo || 0,
-        ps5Principal: data.costo || 0,
-        ps5Secundaria: data.costo || 0
+        ps4Principal: precio,
+        ps4Secundaria: precio,
+        ps5Principal: precio,
+        ps5Secundaria: precio
       }
       return {
         correo: correoDoc.id,
         nombre: data.nombre || '',
+        precio,
         precios,
-        costo: data.costo || 0, // Legacy: mantener para compatibilidad
+        costo: data.costo || precio, // Legacy: mantener para compatibilidad
         version: data.version || plataforma,
         codigoMaster: data.codigoMaster || '',
         codigosGenerados: data.codigosGenerados || [],
@@ -311,6 +323,7 @@ export function useCombos() {
         updatedAt: data.updatedAt?.toDate() || new Date(),
         createdBy: data.createdBy
       } as ComboEmailAccount
+
     } catch (error) {
       console.error('Error cargando correo:', error)
       throw error
@@ -359,12 +372,18 @@ export function useCombos() {
       // Construir el objeto de datos
       const correoData: Record<string, any> = {
         nombre: datosCorreo.nombre,
-        precios: datosCorreo.precios,
+        precio: datosCorreo.precio,
         version: datosCorreo.version,
         fecha: Timestamp.fromDate(datosCorreo.fecha),
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now()
       }
+      
+      // Legacy: mantener precios y costo para compatibilidad
+      if (datosCorreo.precios) {
+        correoData.precios = datosCorreo.precios
+      }
+      correoData.costo = datosCorreo.precio // Legacy: usar precio único
       
       // Agregar campos opcionales solo si tienen valor (no undefined)
       if (datosCorreo.codigoMaster !== undefined && datosCorreo.codigoMaster !== null && datosCorreo.codigoMaster !== '') {
@@ -378,18 +397,6 @@ export function useCombos() {
       }
       if (datosCorreo.cuentas !== undefined && datosCorreo.cuentas !== null && Array.isArray(datosCorreo.cuentas)) {
         correoData.cuentas = datosCorreo.cuentas
-      }
-      
-      // Legacy: mantener costo para compatibilidad (usar el precio más bajo)
-      if (datosCorreo.precios) {
-        correoData.costo = Math.min(
-          datosCorreo.precios.ps4Principal,
-          datosCorreo.precios.ps4Secundaria,
-          datosCorreo.precios.ps5Principal,
-          datosCorreo.precios.ps5Secundaria
-        )
-      } else if (datosCorreo.costo !== undefined && datosCorreo.costo !== null) {
-        correoData.costo = datosCorreo.costo
       }
 
       // Agregar campos opcionales solo si tienen valor
@@ -452,6 +459,11 @@ export function useCombos() {
       // Agregar solo los campos que tienen valor
       if (datos.nombre !== undefined && datos.nombre !== null) {
         datosActualizados.nombre = datos.nombre
+      }
+      if (datos.precio !== undefined && datos.precio !== null) {
+        datosActualizados.precio = datos.precio
+        // Legacy: mantener costo para compatibilidad
+        datosActualizados.costo = datos.precio
       }
       if (datos.precios !== undefined && datos.precios !== null) {
         datosActualizados.precios = datos.precios
@@ -559,7 +571,8 @@ export function useCombos() {
     foto?: string,
     isOffert?: boolean,
     version?: ComboPlatform,
-    precios?: import('@/types/combo').ComboSummary['precios'],
+    precio?: number,
+    juegos?: import('@/types/combo').ComboGame[],
     juegoReferenciado?: string
   ): Promise<string> => {
     try {
@@ -579,22 +592,17 @@ export function useCombos() {
       const comboData: Record<string, any> = {
         createdAt: new Date(),
         nombre: nombre,
-        version: version || plataforma
+        version: version || plataforma,
+        precio: precio || 0,
+        juegos: juegos || []
       }
       
       if (foto && foto.trim()) comboData.foto = foto.trim()
       if (isOffert !== undefined) comboData.isOffert = isOffert
-      if (precios) {
-        comboData.precios = precios
-        // Legacy: mantener costo (usar el precio más bajo)
-        comboData.costo = Math.min(
-          precios.ps4Principal,
-          precios.ps4Secundaria,
-          precios.ps5Principal,
-          precios.ps5Secundaria
-        )
-      }
       if (juegoReferenciado) comboData.juegoReferenciado = juegoReferenciado
+      
+      // Legacy: mantener costo para compatibilidad
+      comboData.costo = precio || 0
       
       await setDoc(comboRef, comboData)
       return comboId
@@ -613,7 +621,8 @@ export function useCombos() {
       version?: ComboPlatform
       isOffert?: boolean
       tipoPromocion?: 'ninguna' | 'oferta' | 'promocion'
-      precios?: import('@/types/combo').ComboSummary['precios']
+      precio?: number
+      juegos?: import('@/types/combo').ComboGame[]
       juegoReferenciado?: string
     }
   ): Promise<void> => {
@@ -630,16 +639,12 @@ export function useCombos() {
         updateData.isOffert = datos.tipoPromocion === 'oferta'
       }
       if (datos.isOffert !== undefined) updateData.isOffert = datos.isOffert
-      if (datos.precios) {
-        updateData.precios = datos.precios
-        // Legacy: mantener costo (usar el precio más bajo)
-        updateData.costo = Math.min(
-          datos.precios.ps4Principal,
-          datos.precios.ps4Secundaria,
-          datos.precios.ps5Principal,
-          datos.precios.ps5Secundaria
-        )
+      if (datos.precio !== undefined) {
+        updateData.precio = datos.precio
+        // Legacy: mantener costo para compatibilidad
+        updateData.costo = datos.precio
       }
+      if (datos.juegos !== undefined) updateData.juegos = datos.juegos
       if (datos.juegoReferenciado !== undefined) updateData.juegoReferenciado = datos.juegoReferenciado
       
       await setDoc(comboRef, updateData, { merge: true })
@@ -735,10 +740,13 @@ export function useCombos() {
                   tipoPromocion = 'oferta'
                 }
 
+                const precio = comboDocData.precio !== undefined ? comboDocData.precio : (comboDocData.costo !== undefined ? comboDocData.costo : (correoData.costo || 0))
+                
                 const comboSummary: ComboSummary = {
                   id: comboId,
                   nombre: comboDocData.nombre || correoData.nombre || nombreFromId,
-                  costo: comboDocData.costo !== undefined ? comboDocData.costo : (correoData.costo || 0),
+                  precio,
+                  costo: precio, // Legacy
                   version: comboDocData.version || correoData.version || plataforma,
                   foto: comboDocData.foto || '',
                   isOffert: comboDocData.isOffert || false,
@@ -747,24 +755,26 @@ export function useCombos() {
                   correos: [],
                   stockAccounts: 0,
                   precios: {
-                    ps4Principal: 0,
-                    ps4Secundaria: 0,
-                    ps5Principal: 0,
-                    ps5Secundaria: 0
+                    ps4Principal: precio,
+                    ps4Secundaria: precio,
+                    ps5Principal: precio,
+                    ps5Secundaria: precio
                   },
+                  juegos: comboDocData.juegos || [],
                   juegoReferenciado: comboDocData.juegoReferenciado
                 }
 
                 const emailAccount: ComboEmailAccount = {
                   correo: correoDoc.id,
                   nombre: correoData.nombre || '',
+                  precio,
                   precios: {
-                    ps4Principal: 0,
-                    ps4Secundaria: 0,
-                    ps5Principal: 0,
-                    ps5Secundaria: 0
+                    ps4Principal: precio,
+                    ps4Secundaria: precio,
+                    ps5Principal: precio,
+                    ps5Secundaria: precio
                   },
-                  costo: correoData.costo || 0,
+                  costo: precio, // Legacy
                   version: correoData.version || plataforma,
                   codigoMaster: correoData.codigoMaster || '',
                   codigosGenerados: correoData.codigosGenerados || [],
@@ -842,10 +852,13 @@ export function useCombos() {
               tipoPromocion = 'oferta'
             }
 
+            const precio = comboDocData.precio !== undefined ? comboDocData.precio : (comboDocData.costo !== undefined ? comboDocData.costo : (correoData.costo || 0))
+            
             const comboSummary: ComboSummary = {
               id: comboId,
               nombre: comboDocData.nombre || correoData.nombre || nombreFromId,
-              costo: comboDocData.costo !== undefined ? comboDocData.costo : (correoData.costo || 0),
+              precio,
+              costo: precio, // Legacy
               version: comboDocData.version || correoData.version || plataforma,
               foto: comboDocData.foto || '',
               isOffert: comboDocData.isOffert || false,
@@ -854,24 +867,26 @@ export function useCombos() {
               correos: [],
               stockAccounts: 0,
               precios: {
-                ps4Principal: 0,
-                ps4Secundaria: 0,
-                ps5Principal: 0,
-                ps5Secundaria: 0
+                ps4Principal: precio,
+                ps4Secundaria: precio,
+                ps5Principal: precio,
+                ps5Secundaria: precio
               },
+              juegos: comboDocData.juegos || [],
               juegoReferenciado: comboDocData.juegoReferenciado
             }
 
             const emailAccount: ComboEmailAccount = {
               correo: correoDoc.id,
               nombre: correoData.nombre || '',
+              precio,
               precios: {
-                ps4Principal: 0,
-                ps4Secundaria: 0,
-                ps5Principal: 0,
-                ps5Secundaria: 0
+                ps4Principal: precio,
+                ps4Secundaria: precio,
+                ps5Principal: precio,
+                ps5Secundaria: precio
               },
-              costo: correoData.costo || 0,
+              costo: precio, // Legacy
               version: correoData.version || plataforma,
               codigoMaster: correoData.codigoMaster || '',
               codigosGenerados: correoData.codigosGenerados || [],
