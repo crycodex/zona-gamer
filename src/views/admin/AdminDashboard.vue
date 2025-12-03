@@ -268,19 +268,33 @@ onMounted(async () => {
 
 /* Tabs Modernos */
 .tab-modern {
-  @apply flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-300;
-  @apply text-gray-400 hover:text-white hover:bg-white/5;
-  @apply border border-transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+  color: rgb(156 163 175);
+  border: 1px solid transparent;
   white-space: nowrap;
 }
 
-.tab-modern-active {
-  @apply text-white bg-gradient-to-r from-error/20 to-error/10;
-  @apply border-error/30 shadow-lg shadow-error/10;
+.tab-modern:hover {
+  color: rgb(255 255 255);
+  background-color: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
 }
 
-.tab-modern:hover {
-  transform: translateY(-1px);
+.tab-modern-active {
+  color: rgb(255 255 255);
+  background-image: linear-gradient(to right, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
+  border-color: rgba(239, 68, 68, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.1), 0 4px 6px -4px rgba(239, 68, 68, 0.1);
 }
 
 .tab-modern-active:hover {

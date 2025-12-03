@@ -235,20 +235,34 @@ onMounted(async () => {
 
 /* Tabs Modernos para Empleado (warning/amarillo) */
 .tab-modern-employee {
-  @apply flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-300;
-  @apply text-gray-400 hover:text-white hover:bg-white/5;
-  @apply border border-transparent;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+  color: rgb(156 163 175);
+  border: 1px solid transparent;
   white-space: nowrap;
 }
 
-.tab-modern-employee-active {
-  @apply text-slate-900 bg-gradient-to-r from-warning/90 to-warning/70;
-  @apply border-warning/50 shadow-lg shadow-warning/10;
-  font-weight: 600;
+.tab-modern-employee:hover {
+  color: rgb(255 255 255);
+  background-color: rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
 }
 
-.tab-modern-employee:hover {
-  transform: translateY(-1px);
+.tab-modern-employee-active {
+  color: rgb(15 23 42); /* slate-900 */
+  background-image: linear-gradient(to right, rgba(251, 189, 35, 0.9), rgba(251, 189, 35, 0.7)); /* warning colors */
+  border-color: rgba(251, 189, 35, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(251, 189, 35, 0.1), 0 4px 6px -4px rgba(251, 189, 35, 0.1);
+  font-weight: 600;
 }
 
 .tab-modern-employee-active:hover {
