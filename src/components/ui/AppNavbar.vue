@@ -22,6 +22,7 @@ const cartDropdownRef = ref<HTMLElement | null>(null)
 const showClearCartConfirm = ref(false)
 const itemToDelete = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
+const searchDebounceTimer = ref<number | null>(null)
 
 const emit = defineEmits<{
   openCart: []
@@ -158,13 +159,18 @@ onUnmounted(() => {
   if (cartObserver) cartObserver.disconnect()
 })
 
-const handleSearch = (): void => {
-  emit('search', searchQuery.value)
-}
 
-// Búsqueda en tiempo real mientras escribe
+// Búsqueda dinámica en tiempo real con debounce
 const handleSearchInput = (): void => {
-  emit('search', searchQuery.value)
+  // Limpiar el timer anterior si existe
+  if (searchDebounceTimer.value !== null) {
+    clearTimeout(searchDebounceTimer.value)
+  }
+  
+  // Configurar nuevo timer para búsqueda con debounce de 300ms
+  searchDebounceTimer.value = window.setTimeout(() => {
+    emit('search', searchQuery.value)
+  }, 300)
 }
 
 const toggleSearch = (): void => {
@@ -172,6 +178,11 @@ const toggleSearch = (): void => {
   if (!isSearchExpanded.value) {
     searchQuery.value = ''
     emit('search', '')
+    // Limpiar timer si existe
+    if (searchDebounceTimer.value !== null) {
+      clearTimeout(searchDebounceTimer.value)
+      searchDebounceTimer.value = null
+    }
   }
 }
 
@@ -188,6 +199,11 @@ const handleSearchBlur = (): void => {
 const clearSearch = (): void => {
   searchQuery.value = ''
   emit('search', '')
+  // Limpiar timer si existe
+  if (searchDebounceTimer.value !== null) {
+    clearTimeout(searchDebounceTimer.value)
+    searchDebounceTimer.value = null
+  }
 }
 
 const getItemPrice = (item: typeof cartStore.items[0]): number => {
@@ -368,7 +384,6 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                   placeholder="Minecraft, RPG, multijugador..."
                   class="input bg-gradient-to-r from-error to-error/80 border-none text-white placeholder:text-orange-100/90 pl-5 pr-11 rounded-full shadow-lg transition-all duration-300 w-64 lg:w-80 focus:outline-none focus:ring-2 focus:ring-orange-400/50 text-sm sm:text-base"
                   @input="handleSearchInput"
-                  @keyup.enter="handleSearch"
                   @blur="handleSearchBlur"
                   autofocus
                 />
@@ -607,24 +622,16 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                 v-model="searchQuery"
                 type="text"
                 placeholder="Buscar juegos..."
-                class="input w-full bg-gradient-to-r from-error/90 to-error/70 border-none text-white placeholder:text-orange-100/90 pl-4 pr-20 rounded-full shadow-lg text-sm"
+                class="input w-full bg-gradient-to-r from-error/90 to-error/70 border-none text-white placeholder:text-orange-100/90 pl-4 pr-10 rounded-full shadow-lg text-sm"
                 @input="handleSearchInput"
-                @keyup.enter="handleSearch"
               />
               <button 
                 v-if="searchQuery"
                 @click="clearSearch"
-                class="absolute right-10 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
-                title="Limpiar"
-              >
-                <X :size="14" />
-              </button>
-              <button 
-                @click="handleSearch"
                 class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
-                title="Buscar"
+                title="Limpiar búsqueda"
               >
-                <Search :size="16" />
+                <X :size="16" />
               </button>
             </div>
           </div>
@@ -653,42 +660,90 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
 
   <!-- Modal de confirmación para eliminar item del carrito -->
   <dialog :class="['modal', { 'modal-open': showDeleteConfirm }]">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg mb-4">¿Eliminar juego del carrito?</h3>
-      <p class="mb-6">
-        ¿Estás seguro de que deseas eliminar <strong>{{ itemToDelete ? getItemName(itemToDelete) : 'este juego' }}</strong> del carrito?
+    <div class="modal-box glass-effect border border-white/10 shadow-2xl max-w-md">
+      <!-- Icono de advertencia -->
+      <div class="flex justify-center mb-6">
+        <div class="w-16 h-16 rounded-full bg-error/20 flex items-center justify-center animate-pulse">
+          <Trash2 :size="32" class="text-error" />
+        </div>
+      </div>
+      
+      <!-- Título -->
+      <h3 class="font-bold text-xl text-center mb-3 text-white">
+        ¿Eliminar del carrito?
+      </h3>
+      
+      <!-- Mensaje -->
+      <p class="text-center text-base-content/80 mb-8 px-4">
+        ¿Estás seguro de que deseas eliminar 
+        <span class="font-bold text-error">{{ itemToDelete ? getItemName(itemToDelete) : 'este juego' }}</span> 
+        del carrito?
       </p>
-      <div class="modal-action">
-        <button @click="cancelarEliminacionItem" class="btn btn-ghost">
+      
+      <!-- Botones de acción -->
+      <div class="flex gap-3 justify-center">
+        <button 
+          @click="cancelarEliminacionItem" 
+          class="btn btn-ghost hover:bg-white/10 min-w-[120px] transition-all duration-300"
+        >
+          <X :size="18" />
           Cancelar
         </button>
-        <button @click="confirmarEliminacionItem" class="btn btn-error">
+        <button 
+          @click="confirmarEliminacionItem" 
+          class="btn bg-gradient-to-r from-error to-error/80 hover:from-red-600 hover:to-error border-none text-white min-w-[120px] shadow-lg hover:shadow-error/50 transition-all duration-300 hover:scale-105"
+        >
+          <Trash2 :size="18" />
           Sí, eliminar
         </button>
       </div>
     </div>
-    <form method="dialog" class="modal-backdrop">
+    <form method="dialog" class="modal-backdrop bg-black/60 backdrop-blur-sm">
       <button @click="cancelarEliminacionItem">close</button>
     </form>
   </dialog>
 
   <!-- Modal de confirmación para vaciar carrito -->
   <dialog :class="['modal', { 'modal-open': showClearCartConfirm }]">
-    <div class="modal-box">
-      <h3 class="font-bold text-lg mb-4">¿Vaciar todo el carrito?</h3>
-      <p class="mb-6">
-        ¿Estás seguro de que deseas eliminar todos los juegos del carrito? Esta acción no se puede deshacer.
+    <div class="modal-box glass-effect border border-white/10 shadow-2xl max-w-md">
+      <!-- Icono de advertencia -->
+      <div class="flex justify-center mb-6">
+        <div class="w-16 h-16 rounded-full bg-error/20 flex items-center justify-center animate-pulse">
+          <ShoppingCart :size="32" class="text-error" />
+        </div>
+      </div>
+      
+      <!-- Título -->
+      <h3 class="font-bold text-xl text-center mb-3 text-white">
+        ¿Vaciar todo el carrito?
+      </h3>
+      
+      <!-- Mensaje -->
+      <p class="text-center text-base-content/80 mb-8 px-4">
+        ¿Estás seguro de que deseas eliminar 
+        <span class="font-bold text-error">todos los juegos</span> 
+        del carrito? Esta acción no se puede deshacer.
       </p>
-      <div class="modal-action">
-        <button @click="cancelarVaciarCarrito" class="btn btn-ghost">
+      
+      <!-- Botones de acción -->
+      <div class="flex gap-3 justify-center">
+        <button 
+          @click="cancelarVaciarCarrito" 
+          class="btn btn-ghost hover:bg-white/10 min-w-[120px] transition-all duration-300"
+        >
+          <X :size="18" />
           Cancelar
         </button>
-        <button @click="confirmarVaciarCarrito" class="btn btn-error">
+        <button 
+          @click="confirmarVaciarCarrito" 
+          class="btn bg-gradient-to-r from-error to-error/80 hover:from-red-600 hover:to-error border-none text-white min-w-[120px] shadow-lg hover:shadow-error/50 transition-all duration-300 hover:scale-105"
+        >
+          <Trash2 :size="18" />
           Sí, vaciar carrito
         </button>
       </div>
     </div>
-    <form method="dialog" class="modal-backdrop">
+    <form method="dialog" class="modal-backdrop bg-black/60 backdrop-blur-sm">
       <button @click="cancelarVaciarCarrito">close</button>
     </form>
   </dialog>

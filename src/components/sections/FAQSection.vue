@@ -1,117 +1,84 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { ChevronDown, MessageCircle } from 'lucide-vue-next'
+import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-vue-next'
 
-interface FAQ {
-  id: string
-  question: string
-  answer: string
-}
-
-const faqs: FAQ[] = [
+const faqs = [
   {
-    id: '1',
-    question: '¿Cómo funciona la compra de juegos digitales?',
-    answer: 'Una vez que realices tu compra, recibirás las credenciales de acceso o el código de activación por correo electrónico de forma inmediata. Podrás descargar y jugar al instante.'
+    question: '¿Cómo recibo mi juego?',
+    answer: 'Una vez confirmado el pago, recibirás un correo electrónico con los datos de acceso de la cuenta (usuario y contraseña) junto con un instructivo paso a paso para la instalación en tu consola.'
   },
   {
-    id: '2',
-    question: '¿Los juegos son legítimos y seguros?',
-    answer: 'Sí, todos nuestros juegos son 100% legítimos y provienen directamente de distribuidores oficiales. Garantizamos la seguridad y autenticidad de todos nuestros productos.'
+    question: '¿Cuál es la diferencia entre Cuenta Principal y Secundaria?',
+    answer: 'La Cuenta Principal te permite jugar desde tu propio usuario personal y ganar trofeos en tu cuenta. La Cuenta Secundaria requiere que juegues desde el usuario que te enviamos y necesitas conexión a internet permanente para jugar.'
   },
   {
-    id: '3',
-    question: '¿Qué métodos de pago aceptan?',
-    answer: 'Aceptamos múltiples métodos de pago incluyendo tarjetas de crédito/débito, PayPal, transferencias bancarias y otros métodos de pago locales según tu región.'
+    question: '¿Tienen garantía los juegos?',
+    answer: 'Sí, todos nuestros juegos cuentan con garantía de por vida ante candado, siempre y cuando se respeten los términos y condiciones de uso (no cambiar datos de la cuenta enviada, no compartirla, etc.).'
   },
   {
-    id: '4',
-    question: '¿Puedo reembolsar un juego si no me gusta?',
-    answer: 'Debido a la naturaleza digital de nuestros productos, no ofrecemos reembolsos una vez que las credenciales han sido entregadas. Sin embargo, si hay algún problema técnico, nuestro equipo de soporte te ayudará a resolverlo.'
+    question: '¿Cuánto tarda el envío?',
+    answer: 'El envío es automático e inmediato las 24 horas del día. En casos excepcionales puede demorar hasta 30 minutos.'
   },
   {
-    id: '5',
-    question: '¿Cuánto tiempo tarda la entrega?',
-    answer: 'La entrega es instantánea. Una vez confirmado el pago, recibirás las credenciales o código de activación en tu correo electrónico en menos de 5 minutos.'
+    question: '¿Qué medios de pago aceptan?',
+    answer: 'Aceptamos transferencias bancarias, Yape, Plin y tarjetas de crédito/débito a través de nuestra pasarela de pagos segura.'
   },
   {
-    id: '6',
-    question: '¿Los juegos funcionan en todas las regiones?',
-    answer: 'La mayoría de nuestros juegos son globales, pero algunos pueden tener restricciones regionales. Siempre indicamos esto en la descripción del producto antes de la compra.'
-  },
-  {
-    id: '7',
-    question: '¿Ofrecen soporte técnico?',
-    answer: 'Sí, nuestro equipo de atención al cliente está disponible 24/7 para ayudarte con cualquier problema o consulta que puedas tener.'
-  },
-  {
-    id: '8',
-    question: '¿Puedo comprar juegos como regalo?',
-    answer: 'Sí, puedes comprar juegos como regalo. Al realizar la compra, tendrás la opción de enviar las credenciales a otra dirección de correo electrónico.'
+    question: '¿Qué hago si tengo problemas con la instalación?',
+    answer: 'Contamos con un equipo de soporte técnico disponible para ayudarte. Si tienes algún inconveniente, contáctanos por WhatsApp y te guiaremos paso a paso hasta que el juego esté funcionando correctamente.'
   }
 ]
 
-const openItems = ref<Set<string>>(new Set())
+const activeIndex = ref<number | null>(0)
 
-const toggleItem = (id: string): void => {
-  if (openItems.value.has(id)) {
-    openItems.value.delete(id)
-  } else {
-    openItems.value.add(id)
-  }
+const toggleFaq = (index: number) => {
+  activeIndex.value = activeIndex.value === index ? null : index
 }
 </script>
 
 <template>
-  <div class="w-full bg-base-200 py-12 md:py-16">
-    <div class="container mx-auto px-4 md:px-6">
-      <!-- Header -->
+  <section class="py-16 bg-slate-900 border-t border-slate-800">
+    <div class="container mx-auto px-4 sm:px-6">
       <div class="text-center mb-12">
-        <h2 class="text-4xl md:text-5xl font-black text-gradient mb-4">Preguntas Frecuentes</h2>
-        <p class="text-base-content/70 text-lg">Encuentra respuestas a las dudas más comunes</p>
+        <div class="inline-flex p-3 bg-slate-800 rounded-full mb-4">
+          <HelpCircle class="text-blue-500" :size="32" />
+        </div>
+        <h2 class="text-3xl font-bold text-white mb-4">Preguntas Frecuentes</h2>
+        <p class="text-gray-400 max-w-2xl mx-auto">
+          Resolvemos tus dudas sobre el proceso de compra e instalación.
+        </p>
       </div>
 
-      <!-- FAQ Items -->
-      <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div
-          v-for="faq in faqs"
-          :key="faq.id"
-          class="bg-base-100 rounded-lg border border-white/10 overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div 
+          v-for="(faq, index) in faqs" 
+          :key="index"
+          class="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 transition-all duration-300 h-fit"
+          :class="{ 'border-blue-500/50 shadow-lg shadow-blue-900/10': activeIndex === index }"
         >
-          <!-- Question -->
-          <button
-            @click="toggleItem(faq.id)"
-            class="w-full px-6 py-4 flex items-center justify-between gap-4 text-left hover:bg-base-200 transition-colors duration-200"
+          <button 
+            @click="toggleFaq(index)"
+            class="w-full flex items-center justify-between p-5 text-left focus:outline-none"
           >
-            <span class="text-lg font-semibold text-white flex-1">{{ faq.question }}</span>
-            <ChevronDown
-              :size="24"
-              class="text-base-content/60 flex-shrink-0 transition-transform duration-300"
-              :class="{ 'rotate-180': openItems.has(faq.id) }"
+            <span class="font-bold text-white" :class="{ 'text-blue-400': activeIndex === index }">
+              {{ faq.question }}
+            </span>
+            <component 
+              :is="activeIndex === index ? ChevronUp : ChevronDown" 
+              class="text-gray-400 transition-transform duration-300"
+              :class="{ 'text-blue-400': activeIndex === index }"
+              :size="20"
             />
           </button>
-
-          <!-- Answer -->
-          <div
-            class="overflow-hidden transition-all duration-300"
-            :class="openItems.has(faq.id) ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'"
+          
+          <div 
+            v-show="activeIndex === index"
+            class="px-5 pb-5 text-gray-300 text-sm leading-relaxed border-t border-slate-700/50 pt-4"
           >
-            <div class="px-6 pb-4 text-base-content/80 leading-relaxed">
-              {{ faq.answer }}
-            </div>
+            {{ faq.answer }}
           </div>
         </div>
       </div>
-
-      <!-- Contacto adicional -->
-      <div class="text-center mt-12">
-        <p class="text-base-content/70 mb-4">¿No encuentras la respuesta que buscas?</p>
-        <button class="btn btn-error gap-2 shadow-glow">
-          <MessageCircle :size="20" />
-          Contactar Soporte
-        </button>
-      </div>
     </div>
-  </div>
+  </section>
 </template>
-

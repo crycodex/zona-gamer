@@ -3,11 +3,13 @@ import type { RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
 import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '@/config/firebase'
-import HomeView from '@/views/HomeView.vue'
+import HomeView from '@/views/front/HomeView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
 import AdminDashboard from '@/views/admin/AdminDashboard.vue'
 import EmployeeDashboard from '@/views/employee/EmployeeDashboard.vue'
-import NotFoundView from '@/views/NotFoundView.vue'
+import NotFoundView from '@/views/front/NotFoundView.vue'
+import OffersView from '@/views/front/OffersView.vue'
+import AllGamesView from '@/views/front/AllGamesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,7 +18,7 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
-      meta: { 
+      meta: {
         requiresAuth: false,
         title: 'Zona Gamer - Juegos PS4 y PS5 Digital | Los Mejores Precios de Ecuador',
         description: 'Compra juegos digitales para PS4 y PS5 en Ecuador. Ofertas exclusivas, entrega inmediata y los mejores precios. Catálogo completo de juegos, DLCs y más.',
@@ -24,11 +26,34 @@ const router = createRouter({
         robots: 'index, follow'
       },
     },
+    // Rutas eliminadas: /promociones y /combos
+    {
+      path: '/ofertas',
+      name: 'offers',
+      component: OffersView,
+      meta: {
+        requiresAuth: false,
+        title: 'Ofertas Especiales - Zona Gamer',
+        description: 'Aprovecha nuestras ofertas por tiempo limitado en juegos digitales.',
+        robots: 'index, follow'
+      }
+    },
+    {
+      path: '/juegos',
+      name: 'all-games',
+      component: AllGamesView,
+      meta: {
+        requiresAuth: false,
+        title: 'Todos los Juegos - Zona Gamer',
+        description: 'Explora nuestro catálogo completo de juegos digitales para PS4 y PS5.',
+        robots: 'index, follow'
+      }
+    },
     {
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta: { 
+      meta: {
         requiresAuth: false,
         title: 'Iniciar Sesión - Zona Gamer',
         description: 'Inicia sesión en Zona Gamer para gestionar tu cuenta y realizar compras de juegos digitales para PS4 y PS5.',
@@ -39,8 +64,8 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: AdminDashboard,
-      meta: { 
-        requiresAuth: true, 
+      meta: {
+        requiresAuth: true,
         requiresRole: 'admin',
         title: 'Panel de Administración - Zona Gamer',
         description: 'Panel de control administrativo de Zona Gamer',
@@ -51,8 +76,8 @@ const router = createRouter({
       path: '/employee',
       name: 'employee',
       component: EmployeeDashboard,
-      meta: { 
-        requiresAuth: true, 
+      meta: {
+        requiresAuth: true,
         requiresRole: 'employee',
         title: 'Panel de Empleado - Zona Gamer',
         description: 'Panel de control para empleados de Zona Gamer',
@@ -63,7 +88,7 @@ const router = createRouter({
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: NotFoundView,
-      meta: { 
+      meta: {
         requiresAuth: false,
         title: 'Página No Encontrada - Zona Gamer',
         description: 'La página que buscas no existe. Explora nuestro catálogo de juegos digitales para PS4 y PS5.',
@@ -105,27 +130,27 @@ router.beforeEach(
     if (to.meta.title) {
       document.title = to.meta.title as string
     }
-    
+
     if (to.meta.description) {
       const metaDescription = document.querySelector('meta[name="description"]') as HTMLMetaElement
       if (metaDescription) {
         metaDescription.setAttribute('content', to.meta.description as string)
       }
     }
-    
+
     if (to.meta.robots) {
       const metaRobots = document.querySelector('meta[name="robots"]') as HTMLMetaElement
       if (metaRobots) {
         metaRobots.setAttribute('content', to.meta.robots as string)
       }
     }
-    
+
     // Actualizar canonical URL
     const canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement
     if (canonical) {
       canonical.setAttribute('href', `https://zonagamer.com${to.path}`)
     }
-    
+
     // Esperar a que Firebase Auth inicialice
     const currentUser = await getCurrentUser()
 
