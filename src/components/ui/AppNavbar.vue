@@ -22,6 +22,7 @@ const cartDropdownRef = ref<HTMLElement | null>(null)
 const showClearCartConfirm = ref(false)
 const itemToDelete = ref<string | null>(null)
 const showDeleteConfirm = ref(false)
+const searchDebounceTimer = ref<number | null>(null)
 
 const emit = defineEmits<{
   openCart: []
@@ -158,16 +159,18 @@ onUnmounted(() => {
   if (cartObserver) cartObserver.disconnect()
 })
 
-const handleSearch = (): void => {
-  emit('search', searchQuery.value)
-  if (searchQuery.value.trim()) {
-    router.push({ path: '/juegos', query: { q: searchQuery.value } })
-  }
-}
 
-// Búsqueda en tiempo real mientras escribe
+// Búsqueda dinámica en tiempo real con debounce
 const handleSearchInput = (): void => {
-  emit('search', searchQuery.value)
+  // Limpiar el timer anterior si existe
+  if (searchDebounceTimer.value !== null) {
+    clearTimeout(searchDebounceTimer.value)
+  }
+  
+  // Configurar nuevo timer para búsqueda con debounce de 300ms
+  searchDebounceTimer.value = window.setTimeout(() => {
+    emit('search', searchQuery.value)
+  }, 300)
 }
 
 const toggleSearch = (): void => {
@@ -175,6 +178,11 @@ const toggleSearch = (): void => {
   if (!isSearchExpanded.value) {
     searchQuery.value = ''
     emit('search', '')
+    // Limpiar timer si existe
+    if (searchDebounceTimer.value !== null) {
+      clearTimeout(searchDebounceTimer.value)
+      searchDebounceTimer.value = null
+    }
   }
 }
 
@@ -191,6 +199,11 @@ const handleSearchBlur = (): void => {
 const clearSearch = (): void => {
   searchQuery.value = ''
   emit('search', '')
+  // Limpiar timer si existe
+  if (searchDebounceTimer.value !== null) {
+    clearTimeout(searchDebounceTimer.value)
+    searchDebounceTimer.value = null
+  }
 }
 
 const getItemPrice = (item: typeof cartStore.items[0]): number => {
@@ -314,259 +327,489 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
 </script>
 
 <template>
-  <!-- Navbar Profesional Compacto -->
-  <header class="sticky top-0 z-50 w-full bg-slate-900/95 backdrop-blur-md border-b border-white/5 shadow-lg">
-    <nav class="w-full">
-      <div class="container mx-auto px-4 sm:px-6">
-        <div class="flex items-center h-16 gap-8">
-          
+  <!-- Navbar flotante con márgenes y bordes redondeados -->
+  <header class="sticky top-4 z-50 px-2 sm:px-4 animate-fadeInUp">
+    <nav class="navbar-glass shadow-2xl rounded-2xl border border-white/30">
+      <div class="container mx-auto px-3 sm:px-4 lg:px-6 relative z-10">
+        <!-- Barra principal -->
+        <div class="flex items-center justify-between py-3 sm:py-4 gap-2 sm:gap-4 lg:gap-6">
           <!-- Logo -->
-          <router-link to="/" class="flex items-center gap-2 shrink-0 group">
+          <a href="/" class="flex items-center gap-2 shrink-0 z-10">
             <img 
               :src="logo" 
               alt="Zona Gamers" 
-              class="h-8 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+              class="h-8 sm:h-10 lg:h-12 w-auto object-contain transition-transform duration-300 hover:scale-105"
             />
-          </router-link>
+          </a>
 
-          <!-- Navegación Izquierda (Desktop) -->
-          <div class="hidden lg:flex items-center gap-6">
-            <router-link to="/" class="text-sm font-medium text-gray-300 hover:text-white transition-colors" active-class="text-blue-500 font-bold">Inicio</router-link>
-            <router-link to="/juegos" class="text-sm font-medium text-gray-300 hover:text-white transition-colors" active-class="text-blue-500 font-bold">Juegos</router-link>
-            <router-link to="/promociones" class="text-sm font-medium text-gray-300 hover:text-white transition-colors" active-class="text-blue-500 font-bold">Promociones</router-link>
-            <router-link to="/combos" class="text-sm font-medium text-gray-300 hover:text-white transition-colors" active-class="text-blue-500 font-bold">Combos</router-link>
-            <router-link to="/ofertas" class="text-sm font-medium text-gray-300 hover:text-white transition-colors" active-class="text-blue-500 font-bold">Ofertas</router-link>
-          </div>
-
-          <!-- Spacer -->
-          <div class="flex-1"></div>
-
-          <!-- Acciones Derecha -->
-          <div class="flex items-center gap-4 shrink-0">
-            <!-- Buscador (Desktop) -->
-            <div class="hidden lg:block relative w-64 group">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search :size="16" class="text-gray-500 group-focus-within:text-blue-500 transition-colors" />
-              </div>
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="Buscar..."
-                class="block w-full pl-10 pr-3 py-1.5 bg-slate-800 border border-slate-700 rounded-full text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
-                @input="handleSearchInput"
-                @keyup.enter="handleSearch"
-              />
-              <button 
-                v-if="searchQuery"
-                @click="clearSearch"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white"
+          <!-- Centro: Filtros de Plataformas y Buscador (Desktop) -->
+          <div class="hidden lg:flex flex-1 items-center justify-center gap-4 animate-fadeInUp delay-100">
+            <!-- Filtros de Plataformas (PS4 y PS5) -->
+            <div class="flex items-center gap-2">
+              <button
+                v-for="platform in platforms"
+                :key="platform.id"
+                @click="handlePlatformChange(platform.id)"
+                :class="[
+                  'flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 text-sm',
+                  selectedPlatform === platform.id
+                    ? 'text-white bg-error/20 border border-error/50 shadow-glow'
+                    : 'text-base-content/70 hover:text-white hover:bg-white/5 border border-transparent'
+                ]"
               >
-                <X :size="14" />
+                <Gamepad2 :size="18" class="shrink-0" />
+                <span>{{ platform.label }}</span>
               </button>
             </div>
 
-            <!-- Carrito -->
-            <div class="dropdown dropdown-end">
-              <div 
-                tabindex="0" 
-                role="button" 
-                class="btn btn-ghost btn-sm btn-circle relative hover:bg-white/10"
-                @click="openCart"
+            <!-- Buscador Expandible -->
+            <div class="relative">
+              <!-- Botón de búsqueda (ícono) -->
+              <button
+                v-if="!isSearchExpanded"
+                @click="toggleSearch"
+                class="btn btn-circle bg-gradient-to-r from-error to-error/80 hover:from-orange-600 hover:to-red-600 border-none shadow-lg text-white transition-all duration-300 hover:scale-110 w-10 h-10 sm:w-12 sm:h-12"
               >
-                <ShoppingCart :size="20" class="text-gray-300" />
-                <span 
-                  v-if="cartStore.totalItems > 0" 
-                  class="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 bg-blue-600 text-white text-[10px] font-bold rounded-full border-2 border-slate-900"
-                >
-                  {{ cartStore.totalItems > 99 ? '99+' : cartStore.totalItems }}
-                </span>
-              </div>
-              
-              <!-- Dropdown Carrito -->
+                <Search :size="18" />
+              </button>
+
+              <!-- Input expandido -->
               <div
-                ref="cartDropdownRef"
-                tabindex="0"
-                class="mt-3 z-[9999] card card-compact dropdown-content w-80 bg-slate-800 border border-slate-700 shadow-xl"
+                v-else
+                class="relative flex items-center animate-scaleIn"
               >
-                <div class="card-body p-4">
-                  <div class="flex items-center justify-between mb-3 border-b border-slate-700 pb-2">
-                    <span class="font-bold text-white">Carrito</span>
-                    <span class="text-xs text-gray-400">{{ cartStore.totalItems }} items</span>
-                  </div>
-                  
-                  <div v-if="!cartStore.isEmpty" class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar">
-                    <div 
-                      v-for="item in cartStore.items" 
-                      :key="item.id"
-                      class="flex gap-3 items-start group"
-                    >
-                      <img 
-                        v-if="item.foto" 
-                        :src="item.foto" 
-                        :alt="item.nombre"
-                        class="w-12 h-16 object-cover rounded bg-slate-900"
-                      />
-                      <div class="flex-1 min-w-0">
-                        <p class="text-sm font-medium text-white truncate">{{ item.nombre }}</p>
-                        <p class="text-xs text-gray-500">{{ item.version }}</p>
-                        <div class="flex items-center justify-between mt-1">
-                          <span class="text-sm font-bold text-blue-400">
-                            {{ formatearPrecio(getItemPrice(item) * item.quantity) }}
-                          </span>
-                          <div class="flex items-center gap-2 bg-slate-900 rounded px-1">
-                            <button 
-                              @click.stop="decrementCartQuantity(item.id, item.quantity)"
-                              class="text-gray-400 hover:text-white px-1"
-                            >
-                              -
-                            </button>
-                            <span class="text-xs text-white w-4 text-center">{{ item.quantity }}</span>
-                            <button 
-                              @click.stop="incrementCartQuantity(item.id, item.quantity)"
-                              class="text-gray-400 hover:text-white px-1"
-                            >
-                              +
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      <button 
-                        @click="iniciarEliminacionItem(item.id)"
-                        class="text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 :size="14" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div v-else class="text-center py-6">
-                    <p class="text-sm text-gray-500">Tu carrito está vacío</p>
-                  </div>
-                  
-                  <div v-if="!cartStore.isEmpty" class="border-t border-slate-700 pt-3 mt-2">
-                    <div class="flex justify-between items-center mb-3">
-                      <span class="text-sm font-medium text-gray-400">Total:</span>
-                      <span class="text-lg font-bold text-white">{{ formatearPrecio(cartStore.totalPrice) }}</span>
-                    </div>
-                    <button 
-                      @click="handleQuickCheckout"
-                      class="btn btn-primary btn-sm btn-block text-white"
-                    >
-                      Comprar
-                    </button>
-                  </div>
-                </div>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Minecraft, RPG, multijugador..."
+                  class="input bg-gradient-to-r from-error to-error/80 border-none text-white placeholder:text-orange-100/90 pl-5 pr-11 rounded-full shadow-lg transition-all duration-300 w-64 lg:w-80 focus:outline-none focus:ring-2 focus:ring-orange-400/50 text-sm sm:text-base"
+                  @input="handleSearchInput"
+                  @blur="handleSearchBlur"
+                  autofocus
+                />
+                <button 
+                  v-if="searchQuery"
+                  @click="clearSearch"
+                  class="absolute right-9 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-6 h-6 min-h-0"
+                  title="Limpiar búsqueda"
+                >
+                  <X :size="14" />
+                </button>
+                <button 
+                  @click="toggleSearch"
+                  class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-7 h-7 min-h-0"
+                  title="Cerrar búsqueda"
+                >
+                  <X :size="16" />
+                </button>
               </div>
             </div>
+          </div>
 
-            <!-- Usuario (Solo visible si hay sesión) -->
+          <!-- Acciones (Usuario y Carrito) -->
+          <div class="flex items-center gap-1 sm:gap-2 shrink-0 animate-fadeInUp delay-200">
+            <!-- Botón Usuario -->
             <div v-if="currentUser" class="dropdown dropdown-end">
               <div 
                 tabindex="0" 
                 role="button" 
-                class="btn btn-ghost btn-sm btn-circle avatar placeholder hover:bg-white/10"
+                class="btn btn-ghost btn-circle hover:bg-primary/20 hover:shadow-glow-primary transition-all duration-300 hover:scale-110 w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 min-h-0"
                 @click="handleUserDropdownToggle"
               >
-                <div class="bg-slate-700 text-neutral-content rounded-full w-8">
-                  <User :size="16" class="text-gray-300" />
-                </div>
+                <User :size="18" class="sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white hover:text-primary transition-colors" />
               </div>
               <ul
                 ref="userDropdownRef"
                 tabindex="0"
-                class="mt-3 z-[9999] p-2 shadow-xl menu menu-sm dropdown-content bg-slate-800 border border-slate-700 rounded-box w-52"
+                class="mt-3 z-[9999] p-2 shadow-lg menu menu-sm dropdown-content glass-effect rounded-lg w-56 sm:w-60 border border-white/10 animate-scaleIn fixed lg:absolute"
               >
-                <li class="menu-title px-2 py-1 text-xs text-gray-500">
-                  {{ currentUser.email }}
+                <!-- Información del usuario -->
+                <li class="menu-title">
+                  <div class="flex flex-col gap-1 py-2">
+                    <span class="text-xs font-semibold text-base-content/90 break-all">{{ currentUser.email }}</span>
+                    <span v-if="currentUserData" class="text-xs badge badge-sm" :class="isAdmin ? 'badge-error' : hasEmployeeAccess ? 'badge-warning' : 'badge-ghost'">
+                      {{ isAdmin ? 'Administrador' : hasEmployeeAccess ? 'Empleado' : 'Cliente' }}
+                    </span>
+                  </div>
                 </li>
+                
+                <div class="divider my-1"></div>
+                
+                <!-- Opción Dashboard (solo para admin y empleados) -->
                 <li v-if="isAdmin || hasEmployeeAccess">
-                  <a @click="irAlDashboard" class="text-gray-300 hover:text-white hover:bg-slate-700">
-                    <LayoutDashboard :size="16" />
-                    Panel de Control
+                  <a @click="irAlDashboard" class="hover:bg-primary/20 hover:text-primary transition-all gap-3">
+                    <LayoutDashboard :size="18" />
+                    <span>Panel de Control</span>
                   </a>
                 </li>
+                <div class="divider my-1"></div>
+                
+                <!-- Cerrar sesión -->
                 <li>
-                  <a @click="handleLogout" class="text-red-400 hover:text-red-300 hover:bg-slate-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <a @click="handleLogout" class="text-error hover:bg-error/20 transition-all gap-3">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-[18px] w-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Cerrar Sesión
+                    <span>Cerrar Sesión</span>
                   </a>
                 </li>
               </ul>
             </div>
-            <!-- Botón de Login eliminado para clientes -->
+            <button v-else @click="irALogin" class="btn btn-ghost btn-circle hover:bg-primary/20 hover:shadow-glow-primary transition-all duration-300 hover:scale-110 w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 min-h-0">
+              <User :size="18" class="sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white hover:text-primary transition-colors" />
+            </button>
 
-            <!-- Menú Móvil Toggle -->
+            <!-- Botón Carrito con dropdown -->
+            <div class="dropdown dropdown-end relative">
+              <div 
+                tabindex="0" 
+                role="button" 
+                class="btn btn-ghost btn-circle hover:bg-error/20 hover:shadow-glow transition-all duration-300 hover:scale-110 group w-9 h-9 sm:w-10 sm:h-10 lg:w-12 lg:h-12 min-h-0"
+                @click="openCart"
+              >
+                <ShoppingCart :size="18" class="sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-white group-hover:text-error transition-colors" />
+              </div>
+              <!-- Badge circular con animación - Fuera del botón -->
+              <span 
+                v-if="cartStore.totalItems > 0" 
+                class="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 flex items-center justify-center min-w-[18px] sm:min-w-[22px] h-5 sm:h-6 px-1 sm:px-1.5 bg-error text-white text-[10px] sm:text-xs font-bold rounded-full shadow-lg animate-pulse border-2 border-base-100 z-30"
+              >
+                {{ cartStore.totalItems > 99 ? '99+' : cartStore.totalItems }}
+              </span>
+              
+              <!-- Dropdown del carrito -->
+              <div
+                ref="cartDropdownRef"
+                tabindex="0"
+                class="mt-3 z-[9999] card card-compact dropdown-content w-[calc(100vw-2rem)] sm:w-80 shadow-xl border border-white/10 animate-fadeInUp bg-base-100 fixed lg:absolute"
+              >
+                <div class="card-body">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold text-lg">Carrito de Compras</span>
+                    <span class="badge badge-error text-white">{{ cartStore.totalItems }} items</span>
+                  </div>
+                  
+                  <div v-if="!cartStore.isEmpty" class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                    <div 
+                      v-for="item in cartStore.items" 
+                      :key="item.id"
+                      class="flex flex-col gap-2 p-3 bg-base-200 rounded-lg border border-base-300 hover:border-error/30 transition-all"
+                    >
+                      <!-- Información principal del item -->
+                      <div class="flex items-start gap-3">
+                        <img 
+                          v-if="item.foto" 
+                          :src="item.foto" 
+                          :alt="item.nombre"
+                          class="w-16 h-20 sm:w-20 sm:h-24 object-cover rounded-lg shrink-0"
+                        />
+                        <div v-else class="w-16 h-20 sm:w-20 sm:h-24 bg-base-300 rounded-lg flex items-center justify-center shrink-0">
+                          <Gamepad2 :size="24" class="text-base-content/30" />
+                        </div>
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm sm:text-base font-semibold text-white mb-1 line-clamp-2">{{ item.nombre }}</p>
+                          <p class="text-xs text-base-content/60 mb-2">{{ item.version }}</p>
+                          <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm font-bold text-error">
+                              {{ formatearPrecio(getItemPrice(item) * item.quantity) }}
+                            </span>
+                            <span class="text-xs text-base-content/60">
+                              ({{ formatearPrecio(getItemPrice(item)) }} c/u)
+                            </span>
+                            <span v-if="item.descuento && item.descuento > 0" class="badge badge-error badge-sm">
+                              -{{ item.descuento }}%
+                            </span>
+                          </div>
+                          <p class="text-xs text-base-content/50">
+                            {{ item.totalCorreos || 0 }} disponibles
+                          </p>
+                        </div>
+                        <button 
+                          @click="iniciarEliminacionItem(item.id)"
+                          class="btn btn-ghost btn-xs btn-circle shrink-0 hover:bg-error/20 hover:text-error transition-all"
+                          title="Eliminar del carrito"
+                        >
+                          <Trash2 :size="14" />
+                        </button>
+                      </div>
+                      
+                      <!-- Controles de cantidad -->
+                      <div class="flex items-center justify-between pt-2 border-t border-base-300">
+                        <span class="text-xs text-base-content/70 font-medium">Cantidad:</span>
+                        <div class="flex items-center gap-2">
+                          <button 
+                            @click.stop="decrementCartQuantity(item.id, item.quantity)"
+                            class="btn btn-xs btn-circle h-6 w-6 min-h-0 p-0 hover:bg-error hover:text-white transition-all"
+                            :disabled="item.quantity <= 0"
+                            title="Disminuir cantidad"
+                          >
+                            <Minus :size="12" />
+                          </button>
+                          <span class="text-sm font-bold min-w-[2rem] text-center">{{ item.quantity }}</span>
+                          <button 
+                            @click.stop="incrementCartQuantity(item.id, item.quantity)"
+                            class="btn btn-xs btn-circle h-6 w-6 min-h-0 p-0 hover:bg-success hover:text-white transition-all"
+                            title="Aumentar cantidad"
+                          >
+                            <Plus :size="12" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div v-else class="text-center py-8">
+                    <ShoppingCart :size="48" class="mx-auto mb-2 text-base-content/30" />
+                    <p class="text-sm text-base-content/60">Tu carrito está vacío</p>
+                  </div>
+                  
+                  <div v-if="!cartStore.isEmpty" class="border-t border-base-300 pt-4 mt-3 space-y-3">
+                    <!-- Resumen de totales -->
+                    <div class="space-y-2">
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs text-base-content/70">Items:</span>
+                        <span class="badge badge-error text-white font-bold">{{ cartStore.totalItems }}</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-sm sm:text-base font-semibold">Total:</span>
+                        <span class="text-lg sm:text-xl font-bold text-error">{{ formatearPrecio(cartStore.totalPrice) }}</span>
+                      </div>
+                    </div>
+                    
+                    <!-- Botones de acción -->
+                    <div class="card-actions flex-col gap-2">
+                      <button 
+                        @click="handleQuickCheckout"
+                        class="btn btn-error btn-block text-white gap-2 text-xs sm:text-sm"
+                      >
+                        <Send :size="16" class="sm:w-5 sm:h-5" />
+                        <span class="hidden sm:inline">Pedir por WhatsApp</span>
+                        <span class="sm:hidden">WhatsApp</span>
+                      </button>
+                      <button 
+                        @click="iniciarVaciarCarrito"
+                        class="btn btn-outline btn-error btn-block btn-sm gap-2 text-xs"
+                      >
+                        <Trash2 :size="14" />
+                        Vaciar Carrito
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón Menú Móvil -->
             <button 
               @click="toggleMobileMenu"
-              class="lg:hidden btn btn-ghost btn-sm btn-circle text-gray-300"
+              class="lg:hidden btn btn-ghost btn-circle hover:bg-primary/20 hover:shadow-glow-primary transition-all duration-300 hover:scale-110 w-9 h-9 sm:w-10 sm:h-10 min-h-0"
             >
-              <Menu v-if="!isMobileMenuOpen" :size="20" />
-              <X v-else :size="20" />
+              <Menu v-if="!isMobileMenuOpen" :size="20" class="text-white" />
+              <X v-else :size="20" class="text-white" />
             </button>
           </div>
         </div>
 
-        <!-- Menú Móvil -->
-        <div v-if="isMobileMenuOpen" class="lg:hidden py-4 border-t border-slate-800">
-          <div class="space-y-4">
-            <div class="flex flex-col gap-2">
-              <router-link to="/" class="px-4 py-2 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white" active-class="bg-blue-600/10 text-blue-500" @click="closeMobileMenu">Inicio</router-link>
-              <router-link to="/juegos" class="px-4 py-2 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white" active-class="bg-blue-600/10 text-blue-500" @click="closeMobileMenu">Juegos</router-link>
-              <router-link to="/promociones" class="px-4 py-2 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white" active-class="bg-blue-600/10 text-blue-500" @click="closeMobileMenu">Promociones</router-link>
-              <router-link to="/combos" class="px-4 py-2 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white" active-class="bg-blue-600/10 text-blue-500" @click="closeMobileMenu">Combos</router-link>
-              <router-link to="/ofertas" class="px-4 py-2 rounded-lg text-gray-300 hover:bg-slate-800 hover:text-white" active-class="bg-blue-600/10 text-blue-500" @click="closeMobileMenu">Ofertas</router-link>
+        <!-- Menú Móvil Expandible -->
+        <div 
+          v-if="isMobileMenuOpen"
+          class="lg:hidden border-t border-white/10 pt-4 pb-3 animate-fadeInDown"
+        >
+          <!-- Buscador Móvil -->
+          <div class="mb-4">
+            <div class="relative">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Buscar juegos..."
+                class="input w-full bg-gradient-to-r from-error/90 to-error/70 border-none text-white placeholder:text-orange-100/90 pl-4 pr-10 rounded-full shadow-lg text-sm"
+                @input="handleSearchInput"
+              />
+              <button 
+                v-if="searchQuery"
+                @click="clearSearch"
+                class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
+                title="Limpiar búsqueda"
+              >
+                <X :size="16" />
+              </button>
             </div>
-            
-            <div class="px-4">
-              <div class="relative">
-                <input
-                  v-model="searchQuery"
-                  type="text"
-                  placeholder="Buscar juegos..."
-                  class="input input-sm w-full bg-slate-800 border-slate-700 text-white pl-10"
-                  @input="handleSearchInput"
-                  @keyup.enter="handleSearch"
-                />
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search :size="16" class="text-gray-500" />
-                </div>
-              </div>
-            </div>
+          </div>
+
+          <!-- Filtros de Plataformas Móvil -->
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            <button
+              v-for="platform in platforms"
+              :key="platform.id"
+              @click="handlePlatformChange(platform.id)"
+              :class="[
+                'flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all duration-300 text-sm',
+                selectedPlatform === platform.id
+                  ? 'text-white bg-error/20 border border-error/50 shadow-glow'
+                  : 'text-base-content/70 hover:text-white hover:bg-white/5 border border-transparent'
+              ]"
+            >
+              <Gamepad2 :size="16" class="shrink-0" />
+              <span>{{ platform.label }}</span>
+            </button>
           </div>
         </div>
       </div>
     </nav>
   </header>
 
-  <!-- Modales (mantenidos igual pero con estilos actualizados) -->
+  <!-- Modal de confirmación para eliminar item del carrito -->
   <dialog :class="['modal', { 'modal-open': showDeleteConfirm }]">
-    <div class="modal-box bg-slate-800 border border-slate-700">
-      <h3 class="font-bold text-lg text-white mb-4">¿Eliminar del carrito?</h3>
-      <p class="text-gray-300 mb-6">
-        ¿Deseas eliminar <strong>{{ itemToDelete ? getItemName(itemToDelete) : 'este juego' }}</strong>?
+    <div class="modal-box glass-effect border border-white/10 shadow-2xl max-w-md">
+      <!-- Icono de advertencia -->
+      <div class="flex justify-center mb-6">
+        <div class="w-16 h-16 rounded-full bg-error/20 flex items-center justify-center animate-pulse">
+          <Trash2 :size="32" class="text-error" />
+        </div>
+      </div>
+      
+      <!-- Título -->
+      <h3 class="font-bold text-xl text-center mb-3 text-white">
+        ¿Eliminar del carrito?
+      </h3>
+      
+      <!-- Mensaje -->
+      <p class="text-center text-base-content/80 mb-8 px-4">
+        ¿Estás seguro de que deseas eliminar 
+        <span class="font-bold text-error">{{ itemToDelete ? getItemName(itemToDelete) : 'este juego' }}</span> 
+        del carrito?
       </p>
-      <div class="modal-action">
-        <button @click="cancelarEliminacionItem" class="btn btn-ghost text-gray-400 hover:text-white">Cancelar</button>
-        <button @click="confirmarEliminacionItem" class="btn btn-error text-white">Eliminar</button>
+      
+      <!-- Botones de acción -->
+      <div class="flex gap-3 justify-center">
+        <button 
+          @click="cancelarEliminacionItem" 
+          class="btn btn-ghost hover:bg-white/10 min-w-[120px] transition-all duration-300"
+        >
+          <X :size="18" />
+          Cancelar
+        </button>
+        <button 
+          @click="confirmarEliminacionItem" 
+          class="btn bg-gradient-to-r from-error to-error/80 hover:from-red-600 hover:to-error border-none text-white min-w-[120px] shadow-lg hover:shadow-error/50 transition-all duration-300 hover:scale-105"
+        >
+          <Trash2 :size="18" />
+          Sí, eliminar
+        </button>
       </div>
     </div>
+    <form method="dialog" class="modal-backdrop bg-black/60 backdrop-blur-sm">
+      <button @click="cancelarEliminacionItem">close</button>
+    </form>
   </dialog>
 
+  <!-- Modal de confirmación para vaciar carrito -->
   <dialog :class="['modal', { 'modal-open': showClearCartConfirm }]">
-    <div class="modal-box bg-slate-800 border border-slate-700">
-      <h3 class="font-bold text-lg text-white mb-4">¿Vaciar carrito?</h3>
-      <p class="text-gray-300 mb-6">Esta acción no se puede deshacer.</p>
-      <div class="modal-action">
-        <button @click="cancelarVaciarCarrito" class="btn btn-ghost text-gray-400 hover:text-white">Cancelar</button>
-        <button @click="confirmarVaciarCarrito" class="btn btn-error text-white">Vaciar Todo</button>
+    <div class="modal-box glass-effect border border-white/10 shadow-2xl max-w-md">
+      <!-- Icono de advertencia -->
+      <div class="flex justify-center mb-6">
+        <div class="w-16 h-16 rounded-full bg-error/20 flex items-center justify-center animate-pulse">
+          <ShoppingCart :size="32" class="text-error" />
+        </div>
+      </div>
+      
+      <!-- Título -->
+      <h3 class="font-bold text-xl text-center mb-3 text-white">
+        ¿Vaciar todo el carrito?
+      </h3>
+      
+      <!-- Mensaje -->
+      <p class="text-center text-base-content/80 mb-8 px-4">
+        ¿Estás seguro de que deseas eliminar 
+        <span class="font-bold text-error">todos los juegos</span> 
+        del carrito? Esta acción no se puede deshacer.
+      </p>
+      
+      <!-- Botones de acción -->
+      <div class="flex gap-3 justify-center">
+        <button 
+          @click="cancelarVaciarCarrito" 
+          class="btn btn-ghost hover:bg-white/10 min-w-[120px] transition-all duration-300"
+        >
+          <X :size="18" />
+          Cancelar
+        </button>
+        <button 
+          @click="confirmarVaciarCarrito" 
+          class="btn bg-gradient-to-r from-error to-error/80 hover:from-red-600 hover:to-error border-none text-white min-w-[120px] shadow-lg hover:shadow-error/50 transition-all duration-300 hover:scale-105"
+        >
+          <Trash2 :size="18" />
+          Sí, vaciar carrito
+        </button>
       </div>
     </div>
+    <form method="dialog" class="modal-backdrop bg-black/60 backdrop-blur-sm">
+      <button @click="cancelarVaciarCarrito">close</button>
+    </form>
   </dialog>
 </template>
 
 <style scoped>
+/* Efecto Glass mejorado para el navbar */
+.navbar-glass {
+  background: linear-gradient(
+    135deg,
+    rgba(17, 24, 39, 0.75) 0%,
+    rgba(31, 41, 55, 0.65) 50%,
+    rgba(17, 24, 39, 0.75) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.37),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset,
+    0 0 40px rgba(220, 38, 38, 0.1);
+  position: relative;
+  overflow: visible;
+}
+
+.navbar-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.navbar-glass::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  animation: shimmer-navbar 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmer-navbar {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
 /* Scrollbar personalizado */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
@@ -578,12 +821,26 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(59, 130, 246, 0.5); /* Blue-500 */
+  background: rgba(220, 38, 38, 0.5);
   border-radius: 10px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(59, 130, 246, 0.7);
+  background: rgba(220, 38, 38, 0.7);
+}
+
+/* Mejora del efecto glass en dropdowns */
+:deep(.glass-effect) {
+  background: linear-gradient(
+    135deg,
+    rgba(17, 24, 39, 0.9) 0%,
+    rgba(31, 41, 55, 0.85) 100%
+  );
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
 /* Posicionamiento de dropdowns en móvil */
@@ -595,14 +852,24 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
     margin-top: 0 !important;
   }
   
+  /* Asegurar que los dropdowns aparezcan sobre el navbar */
   .dropdown.dropdown-end .dropdown-content {
     z-index: 9999 !important;
   }
   
+  /* Dropdown del carrito en móvil - ajustar ancho */
   .dropdown.dropdown-end .dropdown-content.card {
     max-width: calc(100vw - 2rem);
     min-width: 280px;
   }
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>
 
