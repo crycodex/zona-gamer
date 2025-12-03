@@ -122,7 +122,7 @@ const handleWhatsAppClick = () => {
               <MapPin :size="16" class="shrink-0 mt-0.5 text-error" />
               <div>
                 <p class="font-medium text-white">Ubicación</p>
-                <p>Quito, Ecuador</p>
+                <p>Ibarra, Ecuador</p>
               </div>
             </li>
           </ul>
