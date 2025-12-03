@@ -59,21 +59,26 @@ export const useCartStore = defineStore('cart', () => {
     return items.value.reduce((total, item) => {
       // Obtener el precio según el tipo de cuenta seleccionado
       let precioBase = 0
-      switch (item.selectedAccountType) {
-        case 'Principal PS4':
-          precioBase = item.precios.ps4Principal
-          break
-        case 'Secundaria PS4':
-          precioBase = item.precios.ps4Secundaria
-          break
-        case 'Principal PS5':
-          precioBase = item.precios.ps5Principal
-          break
-        case 'Secundaria PS5':
-          precioBase = item.precios.ps5Secundaria
-          break
+      // Defensive check: if precios is missing, try to use legacy price or return 0
+      if (!item.precios) {
+        precioBase = (item as any).precio || (item as any).costo || 0
+      } else {
+        switch (item.selectedAccountType) {
+          case 'Principal PS4':
+            precioBase = item.precios.ps4Principal
+            break
+          case 'Secundaria PS4':
+            precioBase = item.precios.ps4Secundaria
+            break
+          case 'Principal PS5':
+            precioBase = item.precios.ps5Principal
+            break
+          case 'Secundaria PS5':
+            precioBase = item.precios.ps5Secundaria
+            break
+        }
       }
-      
+
       // Calcular precio con descuento si aplica
       const precioUnitario = item.descuento && item.descuento > 0
         ? precioBase * (1 - item.descuento / 100)
@@ -95,10 +100,10 @@ export const useCartStore = defineStore('cart', () => {
 
   // Actions
   const addToCart = (game: GameSummary, quantity: number = 1, accountType: AccountType = 'Principal PS4'): void => {
-    const existingItem = items.value.find(item => 
+    const existingItem = items.value.find(item =>
       item.id === game.id && item.selectedAccountType === accountType
     )
-    
+
     if (existingItem) {
       // Si el juego con el mismo tipo de cuenta ya está en el carrito, aumentar cantidad
       existingItem.quantity += quantity
@@ -120,10 +125,10 @@ export const useCartStore = defineStore('cart', () => {
   }
 
   const updateQuantity = (gameId: string, quantity: number, accountType?: AccountType): void => {
-    const item = accountType 
+    const item = accountType
       ? items.value.find(item => item.id === gameId && item.selectedAccountType === accountType)
       : items.value.find(item => item.id === gameId)
-    
+
     if (item) {
       if (quantity <= 0) {
         removeFromCart(gameId)
@@ -152,9 +157,14 @@ export const useCartStore = defineStore('cart', () => {
       : items.value.find(item => item.id === gameId)
     return item?.quantity || 0
   }
-  
+
   const getItemPrice = (item: CartItem): number => {
     let precioBase = 0
+    // Defensive check: if precios is missing, try to use legacy price or return 0
+    if (!item.precios) {
+      return (item as any).precio || (item as any).costo || 0
+    }
+
     switch (item.selectedAccountType) {
       case 'Principal PS4':
         precioBase = item.precios.ps4Principal
@@ -169,7 +179,7 @@ export const useCartStore = defineStore('cart', () => {
         precioBase = item.precios.ps5Secundaria
         break
     }
-    
+
     if (item.descuento && item.descuento > 0) {
       return precioBase * (1 - item.descuento / 100)
     }

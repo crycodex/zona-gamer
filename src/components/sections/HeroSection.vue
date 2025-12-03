@@ -1,62 +1,31 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ShoppingCart, Star, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import type { GameSummary } from '@/types/game'
+import { useCartStore } from '@/stores/cart'
+import GameQuickAddModal from '@/components/ui/GameQuickAddModal.vue'
 
-interface FeaturedGame {
-  id: string
-  nombre: string
-  precio: number
-  precioOriginal?: number
-  descuento?: number
-  plataforma: string
-  imagen: string
-  rating: number
-  totalReviews: number
-}
+const props = defineProps<{
+  games?: GameSummary[]
+}>()
 
+const cartStore = useCartStore()
 const currentSlide = ref(0)
+const showQuickAdd = ref(false)
+const selectedHeroGame = ref<GameSummary | null>(null)
 let autoplayInterval: number | null = null
 
-const featuredGames: FeaturedGame[] = [
-  {
-    id: 'cyberpunk-2077',
-    nombre: 'Cyberpunk 2077',
-    precio: 25.99,
-    precioOriginal: 39.99,
-    descuento: 35,
-    plataforma: 'PS5',
-    imagen: '/Images/cyberpunk2077.jpg',
-    rating: 4.0,
-    totalReviews: 5421
-  },
-  {
-    id: 'elden-ring',
-    nombre: 'Elden Ring',
-    precio: 44.99,
-    precioOriginal: 59.99,
-    descuento: 25,
-    plataforma: 'PS5',
-    imagen: '/Images/eldenring.webp',
-    rating: 4.8,
-    totalReviews: 4723
-  },
-  {
-    id: 'minecraft',
-    nombre: 'Minecraft',
-    precio: 26.99,
-    plataforma: 'PS4 & PS5',
-    imagen: '/Images/minecraft.webp',
-    rating: 4.5,
-    totalReviews: 8932
-  }
-]
+// Usar los juegos pasados por props, o un array vacío si no hay
+const featuredGames = computed(() => props.games || [])
 
 const nextSlide = (): void => {
-  currentSlide.value = (currentSlide.value + 1) % featuredGames.length
+  if (featuredGames.value.length === 0) return
+  currentSlide.value = (currentSlide.value + 1) % featuredGames.value.length
 }
 
 const prevSlide = (): void => {
-  currentSlide.value = currentSlide.value === 0 ? featuredGames.length - 1 : currentSlide.value - 1
+  if (featuredGames.value.length === 0) return
+  currentSlide.value = currentSlide.value === 0 ? featuredGames.value.length - 1 : currentSlide.value - 1
 }
 
 const goToSlide = (index: number): void => {
@@ -71,9 +40,12 @@ const formatearPrecio = (precio: number): string => {
 }
 
 const startAutoplay = (): void => {
-  autoplayInterval = window.setInterval(() => {
-    nextSlide()
-  }, 5000) // Cambia cada 5 segundos
+  stopAutoplay()
+  if (featuredGames.value.length > 1) {
+    autoplayInterval = window.setInterval(() => {
+      nextSlide()
+    }, 5000)
+  }
 }
 
 const stopAutoplay = (): void => {
@@ -81,6 +53,27 @@ const stopAutoplay = (): void => {
     clearInterval(autoplayInterval)
     autoplayInterval = null
   }
+}
+
+const openQuickAdd = (game: GameSummary) => {
+  selectedHeroGame.value = game
+  showQuickAdd.value = true
+  stopAutoplay() // Pausar autoplay cuando se abre el modal
+}
+
+const handleModalClose = () => {
+  showQuickAdd.value = false
+  selectedHeroGame.value = null
+  startAutoplay() // Reanudar autoplay
+}
+
+// Calcular precio original ficticio para mostrar descuento (si no existe)
+const getPrecioOriginal = (game: GameSummary) => {
+  const precio = game.precios?.ps5Principal || game.costo || 0
+  if (game.descuento) {
+    return precio / (1 - game.descuento / 100)
+  }
+  return null
 }
 
 onMounted(() => {
@@ -93,115 +86,131 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative w-full bg-base-200 py-8">
-    <!-- Carrusel contenedor - Con ancho limitado y centrado -->
-    <div class="container mx-auto px-4 md:px-6">
-      <div class="relative overflow-hidden rounded-lg" style="width: 100%; aspect-ratio: 446 / 537;">
+  <div v-if="featuredGames.length > 0" class="relative w-full bg-slate-900 border-b border-white/5">
+    <!-- Carrusel contenedor -->
+    <div class="container mx-auto px-4 sm:px-6 py-6">
+      <div class="relative h-[400px] md:h-[450px] w-full overflow-hidden rounded-xl shadow-2xl bg-slate-800 group">
         <!-- Slides -->
         <div 
           v-for="(game, index) in featuredGames" 
           :key="game.id"
-          class="absolute inset-0 transition-opacity duration-700"
+          class="absolute inset-0 transition-opacity duration-500 ease-in-out"
           :class="currentSlide === index ? 'opacity-100 z-10' : 'opacity-0 z-0'"
         >
-          <!-- Background Image - Dimensiones 446 ancho x 537 alto -->
-          <div class="absolute inset-0 flex items-center justify-center bg-base-300">
+          <!-- Imagen de Fondo (Blur Effect) -->
+          <div class="absolute inset-0 overflow-hidden">
             <img 
-              :src="game.imagen" 
+              v-if="game.foto"
+              :src="game.foto" 
               :alt="game.nombre"
-              class="w-full h-full object-cover"
-              style="width: 100%; height: 100%; object-fit: cover; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;"
-              loading="eager"
+              class="w-full h-full object-cover blur-xl opacity-30 scale-110"
             />
-            <!-- Overlay sutil solo en el lado izquierdo - Menos saturado -->
-            <div class="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-transparent pointer-events-none"></div>
+            <!-- Gradiente sólido para asegurar legibilidad -->
+            <div class="absolute inset-0 bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-900/60"></div>
           </div>
 
-          <!-- Contenido sobre el background - Lado izquierdo -->
-          <div class="relative z-20 h-full flex items-center">
-            <div class="w-full px-6 md:px-12 lg:px-16">
-              <div class="max-w-xl space-y-5">
-                <!-- Plataforma -->
-                <div>
-                  <span class="text-sm font-bold text-error uppercase tracking-wider">
-                    {{ game.plataforma }}
-                  </span>
-                </div>
-
-                <!-- Título -->
-                <h2 class="text-5xl md:text-6xl lg:text-7xl font-black text-white leading-tight">
-                  {{ game.nombre }}
-                </h2>
-
-                <!-- Rating -->
-                <div class="flex items-center gap-3">
-                  <div class="flex items-center gap-1">
-                    <Star 
-                      v-for="i in 5" 
-                      :key="i"
-                      :size="18"
-                      :class="i <= Math.floor(game.rating) ? 'text-warning fill-warning' : 'text-white/30'"
-                    />
-                  </div>
-                  <span class="text-white/90 text-sm">
-                    {{ game.rating }} ({{ game.totalReviews.toLocaleString() }} reseñas)
-                  </span>
-                </div>
-
-                <!-- Precio y Badge de descuento -->
-                <div class="flex items-center gap-4">
-                  <div v-if="game.descuento" class="bg-orange-500 text-white font-bold px-4 py-2 rounded">
-                    -{{ game.descuento }}%
-                  </div>
-                  <div class="text-4xl md:text-5xl font-black text-error">
-                    {{ formatearPrecio(game.precio) }}
-                  </div>
-                  <div v-if="game.precioOriginal" class="text-xl text-white/50 line-through">
-                    {{ formatearPrecio(game.precioOriginal) }}
-                  </div>
-                </div>
+          <!-- Contenido Principal -->
+          <div class="relative z-20 h-full flex items-center justify-center px-8 md:px-12 gap-8 md:gap-16 lg:gap-20">
+            <!-- Info (Izquierda) -->
+            <div class="max-w-2xl space-y-6 flex-1 py-8 text-left md:text-right lg:text-left">
+              <!-- Plataforma Badge -->
+              <div class="flex justify-start md:justify-end lg:justify-start">
+                <span class="inline-block px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded uppercase tracking-wider shadow-lg shadow-blue-900/50">
+                  {{ game.version }}
+                </span>
               </div>
+
+              <!-- Título -->
+              <h2 class="text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight tracking-tight line-clamp-2 drop-shadow-lg">
+                {{ game.nombre }}
+              </h2>
+
+              <!-- Rating & Info -->
+              <div class="flex items-center justify-start md:justify-end lg:justify-start gap-4 text-sm text-gray-300">
+                <div class="flex items-center gap-1 text-yellow-400">
+                  <Star v-for="i in 5" :key="i" :size="16" class="fill-current" />
+                </div>
+                <span class="font-medium">Juego Destacado</span>
+              </div>
+
+              <!-- Precio y Acción -->
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-start md:justify-end lg:justify-start gap-6 pt-4">
+                <div class="text-left md:text-right lg:text-left">
+                  <div v-if="getPrecioOriginal(game)" class="text-sm text-gray-400 line-through mb-1">
+                    {{ formatearPrecio(getPrecioOriginal(game)!) }}
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-4xl font-bold text-white tracking-tight">
+                      {{ formatearPrecio(game.precios?.ps5Principal || game.costo || 0) }}
+                    </span>
+                    <span v-if="game.descuento" class="px-2.5 py-1 bg-green-500 text-slate-900 text-sm font-bold rounded-full">
+                      -{{ game.descuento }}%
+                    </span>
+                  </div>
+                </div>
+                
+                <button 
+                  @click="openQuickAdd(game)"
+                  class="btn btn-primary btn-lg px-8 text-white gap-2 shadow-xl shadow-blue-600/20 hover:scale-105 transition-transform"
+                >
+                  <ShoppingCart :size="20" />
+                  Comprar Ahora
+                </button>
+              </div>
+            </div>
+
+            <!-- Imagen Box Art (Derecha - Solo Desktop) -->
+            <div class="hidden md:block relative w-[280px] h-[380px] shrink-0 transform rotate-3 hover:rotate-0 transition-transform duration-500 ease-out perspective-1000">
+              <img 
+                v-if="game.foto"
+                :src="game.foto" 
+                :alt="game.nombre"
+                class="w-full h-full object-cover rounded-lg shadow-2xl shadow-black/80 border border-white/10"
+              />
+              <!-- Reflejo sutil -->
+              <div class="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent rounded-lg pointer-events-none"></div>
             </div>
           </div>
         </div>
 
-        <!-- Botones de navegación - Más discretos -->
+        <!-- Controles de Navegación (Visibles en hover) -->
         <button 
+          v-if="featuredGames.length > 1"
           @click="prevSlide"
-          @mouseenter="stopAutoplay"
-          @mouseleave="startAutoplay"
-          class="absolute left-6 top-1/2 -translate-y-1/2 z-30 btn btn-circle bg-black/30 hover:bg-black/50 border border-white/20 text-white backdrop-blur-sm transition-all duration-300"
+          class="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-sm"
         >
-          <ChevronLeft :size="20" />
+          <ChevronLeft :size="24" />
         </button>
 
         <button 
+          v-if="featuredGames.length > 1"
           @click="nextSlide"
-          @mouseenter="stopAutoplay"
-          @mouseleave="startAutoplay"
-          class="absolute right-6 top-1/2 -translate-y-1/2 z-30 btn btn-circle bg-black/30 hover:bg-black/50 border border-white/20 text-white backdrop-blur-sm transition-all duration-300"
+          class="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-sm"
         >
-          <ChevronRight :size="20" />
+          <ChevronRight :size="24" />
         </button>
 
-        <!-- Indicadores - Más discretos en la parte inferior -->
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+        <!-- Indicadores -->
+        <div v-if="featuredGames.length > 1" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex gap-2">
           <button
             v-for="(game, index) in featuredGames"
             :key="`indicator-${game.id}`"
             @click="goToSlide(index)"
-            @mouseenter="stopAutoplay"
-            @mouseleave="startAutoplay"
-            :class="[
-              'h-2 rounded-full transition-all duration-300',
-              currentSlide === index 
-                ? 'bg-error w-8' 
-                : 'bg-white/40 hover:bg-white/60 w-2'
-            ]"
+            class="h-1.5 rounded-full transition-all duration-300"
+            :class="currentSlide === index ? 'bg-white w-8' : 'bg-white/30 w-4 hover:bg-white/50'"
           ></button>
         </div>
       </div>
     </div>
+
+    <!-- Modal de Vista Rápida -->
+    <GameQuickAddModal 
+      v-if="selectedHeroGame"
+      :open="showQuickAdd" 
+      :game="selectedHeroGame" 
+      @close="handleModalClose" 
+    />
   </div>
 </template>
+
 

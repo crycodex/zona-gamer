@@ -1,290 +1,122 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { useCombos } from '@/composables/useCombos'
+import { computed } from 'vue'
+import { Package, ShoppingCart, Plus, ArrowRight } from 'lucide-vue-next'
 import { useCartStore } from '@/stores/cart'
 import type { ComboSummary } from '@/types/combo'
-import type { GameSummary, AccountType } from '@/types/game'
-import { Package, Sparkles } from 'lucide-vue-next'
+import { useCombos } from '@/composables/useCombos'
 
-const { combos, isLoadingCombos } = useCombos()
+const { combos } = useCombos()
 const cartStore = useCartStore()
 
-// Mostrar solo los combos activos y que tengan correos
-const combosDisponibles = computed(() => {
-  return combos.value.filter(combo => {
-    // Filtrar por activo (por defecto true si no está definido)
-    const estaActivo = combo.activo !== false
-    // Filtrar por correos disponibles
-    const tieneCorreos = (combo.totalCorreos ?? 0) > 0
-    return estaActivo && tieneCorreos
-  })
+const activeCombos = computed(() => {
+  return combos.value.filter(c => c.activo !== false).slice(0, 4)
 })
 
-// Debug: log para ver qué combos se están cargando
-watch(combos, (newCombos) => {
-  console.log('🔍 Combos cargados en ComboSection:', newCombos.length)
-  console.log('📦 Detalles de combos:', newCombos.map(c => ({ 
-    id: c.id, 
-    nombre: c.nombre, 
-    correos: c.totalCorreos, 
-    stock: c.stockAccounts,
-    activo: c.activo
-  })))
-}, { immediate: true })
-
-
-// Obtener el precio del combo
-const getPrecioCombo = (combo: ComboSummary): number => {
-  return combo.precio || combo.costo || 0
-}
-
-// Calcular descuento si está en promoción
-const calcularDescuento = (combo: ComboSummary): number => {
-  // Si hay descuento configurado, usarlo
-  if (combo.descuento) return combo.descuento
-  // Si está en oferta, mostrar un descuento por defecto
-  if (combo.tipoPromocion === 'oferta' || combo.isOffert) return 15
-  if (combo.tipoPromocion === 'promocion') return 10
-  return 0
-}
-
-const formatearPrecio = (precio: number): string => {
+const formatearPrecio = (precio: number) => {
   return new Intl.NumberFormat('es-US', {
     style: 'currency',
     currency: 'USD'
   }).format(precio)
 }
 
-// Agregar combo al carrito (tratándolo como un juego)
-const agregarComboAlCarrito = (combo: ComboSummary): void => {
-  const precioCombo = getPrecioCombo(combo)
-  
-  // Convertir el combo a formato GameSummary para el carrito
-  // Para combos, todos los precios son iguales (precio único)
-  const comboAsGame: GameSummary = {
+const handleAddToCart = (combo: ComboSummary) => {
+  // Adaptar el combo al formato del carrito
+  cartStore.addToCart({
     id: combo.id,
     nombre: combo.nombre,
+    precio: combo.precio,
     foto: combo.foto,
     version: combo.version,
-    // Para combos, todos los precios son iguales al precio único
-    precios: {
-      ps4Principal: precioCombo,
-      ps4Secundaria: precioCombo,
-      ps5Principal: precioCombo,
-      ps5Secundaria: precioCombo
-    },
-    tipoPromocion: combo.tipoPromocion || 'ninguna',
-    isOffert: combo.isOffert || false,
-    descuento: calcularDescuento(combo),
-    stockAccounts: combo.stockAccounts || 0,
-    totalCorreos: combo.totalCorreos,
-    correos: combo.correos || [],
-    // Campos adicionales para compatibilidad
-    costo: precioCombo,
-    activo: combo.activo !== false
-  }
-  
-  // Para combos, usamos Principal PS4 como tipo por defecto, pero el precio es el mismo para todos
-  cartStore.addToCart(comboAsGame, 1, 'Principal PS4')
+    selectedAccountType: 'Principal', // Por defecto
+    quantity: 1,
+    isCombo: true
+  })
 }
 </script>
 
 <template>
-  <div class="w-full bg-base-200 py-12 md:py-16">
-    <div class="container mx-auto px-4 md:px-6">
+  <section v-if="activeCombos.length > 0" class="py-12 bg-slate-900 border-b border-white/5">
+    <div class="container mx-auto px-4 sm:px-6">
       <!-- Header -->
-      <div class="flex items-center gap-4 mb-8 animate-fadeInUp">
-        <div class="relative">
-          <Package :size="48" class="text-error animate-float" :stroke-width="2" />
-          <div class="absolute inset-0 blur-xl bg-error/30"></div>
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3">
+          <div class="p-2 bg-purple-600/10 rounded-lg">
+            <Package class="text-purple-500" :size="24" />
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-white">Combos de Ahorro</h2>
+            <p class="text-sm text-gray-400">Paquetes exclusivos con descuento</p>
+          </div>
         </div>
-        <div class="flex-1">
-          <h2 class="text-4xl font-black text-gradient-animated mb-1">Combos Especiales</h2>
-          <p class="text-base-content/70 text-lg">Ahorra más comprando paquetes de juegos</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <Sparkles :size="24" class="text-warning animate-pulse" />
-        </div>
-      </div>
-
-      <!-- Loading -->
-      <div v-if="isLoadingCombos" class="flex justify-center items-center py-20">
-        <span class="loading loading-spinner loading-lg text-error"></span>
+        <router-link to="/combos" class="group flex items-center gap-2 text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors">
+          Ver todos
+          <ArrowRight :size="16" class="group-hover:translate-x-1 transition-transform" />
+        </router-link>
       </div>
 
       <!-- Grid de Combos -->
-      <div v-else-if="combosDisponibles.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div
-          v-for="combo in combosDisponibles"
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div 
+          v-for="combo in activeCombos" 
           :key="combo.id"
-          class="card bg-base-100 shadow-xl hover:shadow-2xl border border-white/10 overflow-hidden group transition-all duration-300 hover:scale-105"
+          class="group relative bg-slate-800 rounded-xl overflow-hidden border border-slate-700 hover:border-purple-500/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
         >
-          <!-- Imagen del combo -->
-          <figure class="relative h-48 bg-gradient-to-br from-error/20 via-primary/20 to-warning/20 overflow-hidden">
-            <img 
-              v-if="combo.foto" 
-              :src="combo.foto" 
-              :alt="combo.nombre"
-              class="w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-opacity duration-300"
-            />
-            <div v-else class="w-full h-full flex items-center justify-center">
-              <Package :size="64" class="text-base-content/30" />
-            </div>
-            
-            <!-- Badge de descuento (si tiene promoción) -->
-            <div 
-              v-if="combo.tipoPromocion === 'oferta' || combo.tipoPromocion === 'promocion' || combo.isOffert"
-              class="absolute top-4 left-4 bg-error text-white font-black px-4 py-2 rounded-lg shadow-lg text-lg"
-            >
-              -{{ calcularDescuento(combo) }}%
-            </div>
-            
-            
-            <!-- Overlay con gradiente -->
-            <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-          </figure>
-
-          <!-- Contenido del combo -->
-          <div class="card-body p-6">
-            <h3 class="card-title text-xl font-bold mb-3 line-clamp-2">
-              {{ combo.nombre }}
-            </h3>
-
-            <!-- Información del combo -->
-            <div class="space-y-2 mb-4">
-              <div class="flex items-center gap-2 text-sm text-base-content/70">
-                <Package :size="16" />
-                <span>{{ combo.version }}</span>
+          <div class="flex flex-col sm:flex-row h-full">
+            <!-- Imagen / Preview -->
+            <div class="w-full sm:w-2/5 bg-slate-900 relative min-h-[200px] sm:min-h-0">
+              <!-- Placeholder de imagen -->
+              <div class="absolute inset-0 flex items-center justify-center">
+                <Package :size="48" class="text-slate-700" />
               </div>
-              <div class="flex items-center gap-2 text-sm text-base-content/70">
-                <span>📧 {{ combo.totalCorreos }} correo{{ combo.totalCorreos > 1 ? 's' : '' }} disponible{{ combo.totalCorreos > 1 ? 's' : '' }}</span>
+              <img 
+                v-if="combo.foto"
+                :src="combo.foto" 
+                :alt="combo.nombre"
+                class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
+              />
+              <!-- Badge Ahorro (si aplica) -->
+              <div v-if="combo.isOffert" class="absolute top-3 left-3 bg-green-600 text-white text-xs font-bold px-2 py-1 rounded shadow-lg">
+                Oferta Especial
               </div>
             </div>
 
-            <!-- Juegos incluidos -->
-            <div class="mb-4 pt-4 border-t border-white/10">
-              <div class="mb-3">
-                <h4 class="font-bold text-sm text-base-content/80 mb-2 flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  Juegos Incluidos ({{ combo.juegos?.length || 0 }})
-                </h4>
+            <!-- Info -->
+            <div class="flex-1 p-5 flex flex-col justify-between">
+              <div>
+                <h3 class="text-xl font-bold text-white mb-2 group-hover:text-purple-400 transition-colors">{{ combo.nombre }}</h3>
+                
+                <!-- Lista de juegos -->
+                <div class="space-y-2 mb-4">
+                  <div v-for="(juego, index) in combo.juegos" :key="index" class="flex items-start gap-2 text-sm text-gray-300">
+                    <Plus :size="14" class="mt-1 text-purple-500" />
+                    <span class="flex-1">{{ juego.nombre }} ({{ juego.version }})</span>
+                  </div>
+                </div>
               </div>
-              
-              <div v-if="combo.juegos && combo.juegos.length > 0" class="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
-                <div
-                  v-for="(juego, index) in combo.juegos"
-                  :key="index"
-                  class="flex items-center gap-2 bg-base-200 px-3 py-2 rounded-lg text-sm"
+
+              <div class="flex items-center justify-between pt-4 border-t border-slate-700/50">
+                <div>
+                  <div class="text-2xl font-bold text-white">
+                    {{ formatearPrecio(combo.precio) }}
+                  </div>
+                  <div class="text-xs text-gray-400">
+                    {{ combo.version }}
+                  </div>
+                </div>
+
+                <button 
+                  @click="handleAddToCart(combo)"
+                  class="btn btn-sm bg-purple-600 hover:bg-purple-700 text-white border-none gap-2"
                 >
-                  <div class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-error"></div>
-                  <span class="flex-1 line-clamp-1">{{ juego.nombre }}</span>
-                  <span 
-                    v-if="juego.tipo === 'catalogo'" 
-                    class="badge badge-xs badge-primary opacity-60"
-                  >
-                    Catálogo
-                  </span>
-                </div>
-              </div>
-              
-              <div v-else class="text-center py-4 text-sm text-base-content/50">
-                No hay juegos especificados
-              </div>
-              
-              <!-- Precio del combo -->
-              <div class="mt-4 pt-4 border-t border-white/10">
-                <div class="flex items-center justify-between">
-                  <div>
-                    <p class="text-xs text-base-content/60">Precio del Combo</p>
-                    <p class="text-2xl font-black text-error">
-                      {{ formatearPrecio(getPrecioCombo(combo)) }}
-                    </p>
-                  </div>
-                  <div v-if="calcularDescuento(combo) > 0" class="badge badge-success badge-lg">
-                    -{{ calcularDescuento(combo) }}%
-                  </div>
-                </div>
+                  <ShoppingCart :size="16" />
+                  Agregar
+                </button>
               </div>
             </div>
-
-            <!-- Botón agregar -->
-            <button
-              @click="agregarComboAlCarrito(combo)"
-              class="btn w-full font-bold gap-2 shadow-glow hover:shadow-glow transition-all"
-              :class="{
-                'btn-success': cartStore.isInCart(combo.id),
-                'btn-error': !cartStore.isInCart(combo.id)
-              }"
-            >
-              <Package :size="20" />
-              <span v-if="cartStore.isInCart(combo.id)">
-                ✓ En el Carrito ({{ cartStore.getItemQuantity(combo.id) }})
-              </span>
-              <span v-else>
-                Agregar Combo al Carrito
-              </span>
-            </button>
           </div>
         </div>
       </div>
-
-      <!-- Mensaje si no hay combos -->
-      <div v-else class="text-center py-20 animate-fadeInUp">
-        <div class="flex justify-center mb-6 relative">
-          <Package :size="120" class="text-error/20 animate-float" :stroke-width="1.5" />
-          <div class="absolute inset-0 blur-2xl bg-error/10"></div>
-        </div>
-        <h3 class="text-3xl font-black text-gradient mb-3">No hay combos disponibles</h3>
-        <p class="text-base-content/60 text-lg mb-4">Los combos aparecerán cuando estén disponibles en la tienda</p>
-        <!-- Debug info -->
-        <div class="mt-4 text-sm text-base-content/40">
-          <p>Total de combos cargados: {{ combos.length }}</p>
-          <p>Combos con correos: {{ combosDisponibles.length }}</p>
-        </div>
-      </div>
     </div>
-  </div>
+  </section>
 </template>
-
-<style scoped>
-.line-clamp-1 {
-  display: -webkit-box;
-  line-clamp: 1;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-2 {
-  display: -webkit-box;
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.custom-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(239, 68, 68, 0.5) transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: rgba(239, 68, 68, 0.5);
-  border-radius: 20px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(239, 68, 68, 0.7);
-}
-</style>
 
