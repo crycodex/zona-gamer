@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useGames } from '@/composables/useGames'
-import { useCombos } from '@/composables/useCombos'
 import { useCartStore } from '@/stores/cart'
 import AppNavbar from '@/components/ui/AppNavbar.vue'
 import HeroSection from '@/components/sections/HeroSection.vue'
@@ -13,10 +12,9 @@ import FeaturesBanner from '@/components/sections/FeaturesBanner.vue'
 import AppFooter from '@/components/ui/AppFooter.vue'
 import CartModal from '@/components/ui/CartModal.vue'
 import GameGridSection from '@/components/sections/GameGridSection.vue'
-import { Tag, Package, Percent } from 'lucide-vue-next'
+import { Percent } from 'lucide-vue-next'
 
 const { games, isLoadingGames, cargarJuegos } = useGames()
-const { combos, isLoadingCombos, cargarCombos } = useCombos()
 const cartStore = useCartStore()
 const cartOpen = ref(false)
 
@@ -32,10 +30,7 @@ const offerGames = computed(() => {
   ).slice(0, 8)
 })
 
-// Promociones: juegos marcados específicamente como promoción
-const promotionGames = computed(() => {
-  return games.value.filter(g => g.tipoPromocion === 'promocion').slice(0, 8)
-})
+
 
 // Tendencias: juegos destacados que no son necesariamente ofertas
 const trendingGames = computed(() => {
@@ -63,10 +58,7 @@ const handleCheckout = () => {
 }
 
 onMounted(async () => {
-  await Promise.all([
-    cargarJuegos('PS4 & PS5'),
-    cargarCombos('PS4 & PS5')
-  ])
+  await cargarJuegos('PS4 & PS5')
 })
 </script>
 
@@ -77,31 +69,7 @@ onMounted(async () => {
     <main>
       <HeroSection :games="featuredGames" />
       
-      <!-- Sección de Promociones -->
-      <GameGridSection
-        v-if="promotionGames.length > 0"
-        title="Promociones"
-        subtitle="Aprovecha estas promociones por tiempo limitado"
-        :icon="Tag"
-        :games="promotionGames"
-        view-all-route="/promociones"
-        view-all-text="Ver todas las promociones"
-        icon-color-class="text-purple-500"
-        icon-bg-class="bg-purple-600/10"
-      />
 
-      <!-- Sección de Combos -->
-      <GameGridSection
-        v-if="combos.length > 0"
-        title="Combos de Ahorro"
-        subtitle="Lleva más por menos con nuestros combos"
-        :icon="Package"
-        :games="combos"
-        view-all-route="/combos"
-        view-all-text="Ver todos los combos"
-        icon-color-class="text-emerald-500"
-        icon-bg-class="bg-emerald-600/10"
-      />
 
       <!-- Sección de Ofertas -->
       <GameGridSection
