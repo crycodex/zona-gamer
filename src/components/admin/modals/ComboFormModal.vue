@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useGames } from '@/composables/useGames'
 import type { ComboSummary, ComboPlatform, ComboGame } from '@/types/combo'
 import type { PromocionType } from '@/types/game'
@@ -52,6 +52,7 @@ const formData = ref<ComboFormData>({
 const tipoJuegoNuevo = ref<'catalogo' | 'manual'>('catalogo')
 const juegoDelCatalogo = ref<GameSummary | null>(null)
 const nombreJuegoManual = ref('')
+const busquedaJuego = ref('')
 
 // Resetear form cuando se abre/cierra el modal o cambia el combo
 watch(() => props.show, async (newVal) => {
@@ -94,7 +95,20 @@ watch(() => props.show, async (newVal) => {
     tipoJuegoNuevo.value = 'catalogo'
     juegoDelCatalogo.value = null
     nombreJuegoManual.value = ''
+    busquedaJuego.value = ''
   }
+})
+
+// Computed para filtrar juegos según la búsqueda
+const juegosFiltrados = computed(() => {
+  if (!busquedaJuego.value.trim()) {
+    return games.value
+  }
+  
+  const terminoBusqueda = busquedaJuego.value.toLowerCase().trim()
+  return games.value.filter(juego => 
+    juego.nombre.toLowerCase().includes(terminoBusqueda)
+  )
 })
 
 // Función para agregar juego al combo
@@ -113,6 +127,7 @@ const agregarJuego = () => {
       tipo: 'catalogo'
     })
     juegoDelCatalogo.value = null
+    busquedaJuego.value = '' // Limpiar búsqueda después de agregar
   } else if (tipoJuegoNuevo.value === 'manual' && nombreJuegoManual.value.trim()) {
     // Verificar que no esté duplicado
     const existe = formData.value.juegos.some(j => j.nombre.toLowerCase() === nombreJuegoManual.value.toLowerCase().trim())
@@ -366,29 +381,73 @@ onMounted(async () => {
               </div>
 
               <!-- Agregar juego del catálogo -->
-              <div v-if="tipoJuegoNuevo === 'catalogo'" class="flex gap-2">
-                <select
-                  v-model="juegoDelCatalogo"
-                  class="select select-bordered flex-1"
-                >
-                  <option :value="null">Selecciona un juego...</option>
-                  <option
-                    v-for="juego in games"
-                    :key="juego.id"
-                    :value="juego"
+              <div v-if="tipoJuegoNuevo === 'catalogo'" class="space-y-3">
+                <!-- Campo de búsqueda -->
+                <div class="form-control">
+                  <div class="relative">
+                    <input
+                      v-model="busquedaJuego"
+                      type="text"
+                      placeholder="Buscar juego por nombre..."
+                      class="input input-bordered w-full pr-10"
+                    />
+                    <svg 
+                      v-if="!busquedaJuego"
+                      xmlns="http://www.w3.org/2000/svg" 
+                      class="h-5 w-5 absolute right-3 top-1/2 -translate-y-1/2 text-base-content/40" 
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <button
+                      v-else
+                      type="button"
+                      class="btn btn-ghost btn-sm btn-circle absolute right-2 top-1/2 -translate-y-1/2"
+                      @click="busquedaJuego = ''"
+                      title="Limpiar búsqueda"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <label class="label" v-if="busquedaJuego">
+                    <span class="label-text-alt text-info">
+                      {{ juegosFiltrados.length }} juego(s) encontrado(s)
+                    </span>
+                  </label>
+                </div>
+                
+                <!-- Selector de juego -->
+                <div class="flex gap-2">
+                  <select
+                    v-model="juegoDelCatalogo"
+                    class="select select-bordered flex-1"
+                    :class="juegosFiltrados.length === 0 ? 'select-error' : ''"
                   >
-                    {{ juego.nombre }}
-                  </option>
-                </select>
-                <button
-                  type="button"
-                  class="btn btn-primary gap-2"
-                  @click="agregarJuego"
-                  :disabled="!juegoDelCatalogo"
-                >
-                  <Plus :size="18" />
-                  Agregar
-                </button>
+                    <option :value="null">
+                      {{ juegosFiltrados.length === 0 ? 'No hay juegos que coincidan con la búsqueda' : 'Selecciona un juego...' }}
+                    </option>
+                    <option
+                      v-for="juego in juegosFiltrados"
+                      :key="juego.id"
+                      :value="juego"
+                    >
+                      {{ juego.nombre }}
+                    </option>
+                  </select>
+                  <button
+                    type="button"
+                    class="btn btn-primary gap-2"
+                    @click="agregarJuego"
+                    :disabled="!juegoDelCatalogo"
+                  >
+                    <Plus :size="18" />
+                    Agregar
+                  </button>
+                </div>
               </div>
 
               <!-- Agregar juego manual -->

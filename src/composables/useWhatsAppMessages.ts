@@ -2,7 +2,11 @@ import { ref } from 'vue'
 import { doc, updateDoc, arrayRemove } from 'firebase/firestore'
 import { db } from '@/config/firebase'
 import type { GameEmailAccount, GamePlatform } from '@/types/game'
+import type { ComboEmailAccount, ComboPlatform } from '@/types/combo'
 import { useReportes } from './useReportes'
+
+// Tipo unificado para ambos tipos de cuentas de correo
+type EmailAccount = GameEmailAccount | ComboEmailAccount
 
 export interface WhatsAppMessage {
   correo: string
@@ -58,7 +62,7 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
   /**
    * Valida que haya suficientes códigos disponibles
    */
-  const validarCodigosDisponibles = (correo: GameEmailAccount | null | undefined): boolean => {
+  const validarCodigosDisponibles = (correo: EmailAccount | null | undefined): boolean => {
     if (!correo) {
       console.warn('⚠️ Validación de códigos: correo es null o undefined')
       return false
@@ -82,9 +86,73 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
   }
 
   /**
+   * Valida que haya stock disponible (cuentas disponibles)
+   */
+  const validarStockDisponible = (correo: EmailAccount | null | undefined): boolean => {
+    if (!correo) {
+      console.warn('⚠️ Validación de stock: correo es null o undefined')
+      return false
+    }
+    
+    const tieneStock = correo.cuentas &&
+      Array.isArray(correo.cuentas) &&
+      correo.cuentas.some(cuenta => cuenta?.hasStock === true)
+    
+    // Debug: Log para diagnóstico
+    console.log('🔍 Validación de stock:', {
+      correo: correo.correo,
+      tieneCuentas: !!correo.cuentas,
+      esArray: Array.isArray(correo.cuentas),
+      cantidadCuentas: correo.cuentas?.length || 0,
+      cuentasConStock: correo.cuentas?.filter(c => c?.hasStock === true).length || 0,
+      tieneStock
+    })
+    
+    return tieneStock
+  }
+
+  /**
+   * Valida que no estén ocupados los 4 slots de cuenta
+   * Los 4 tipos de cuenta son: Principal PS4, Secundaria PS4, Principal PS5, Secundaria PS5
+   */
+  const validarSlotsDisponibles = (correo: EmailAccount | null | undefined): boolean => {
+    if (!correo) {
+      console.warn('⚠️ Validación de slots: correo es null o undefined')
+      return false
+    }
+    
+    const cuentas = correo.cuentas || []
+    const tiposCuenta: Array<'Principal PS4' | 'Secundaria PS4' | 'Principal PS5' | 'Secundaria PS5'> = [
+      'Principal PS4',
+      'Secundaria PS4',
+      'Principal PS5',
+      'Secundaria PS5'
+    ]
+    
+    // Contar cuántos slots están ocupados
+    const slotsOcupados = tiposCuenta.filter(tipo => 
+      cuentas.some(cuenta => cuenta?.tipo === tipo)
+    ).length
+    
+    const haySlotDisponible = slotsOcupados < 4
+    
+    // Debug: Log para diagnóstico
+    console.log('🔍 Validación de slots:', {
+      correo: correo.correo,
+      totalCuentas: cuentas.length,
+      slotsOcupados,
+      slotsDisponibles: 4 - slotsOcupados,
+      haySlotDisponible,
+      tiposCuentasOcupadas: cuentas.map(c => c?.tipo)
+    })
+    
+    return haySlotDisponible
+  }
+
+  /**
    * Obtiene los primeros dos códigos disponibles
    */
-  const obtenerCodigosParaUsar = (correo: GameEmailAccount): [string, string] | null => {
+  const obtenerCodigosParaUsar = (correo: EmailAccount): [string, string] | null => {
     if (!validarCodigosDisponibles(correo) || !correo.codigosGenerados) {
       return null
     }
@@ -100,7 +168,7 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
    * Genera el mensaje completo de WhatsApp
    */
   const generarMensajeWhatsApp = (
-    correo: GameEmailAccount
+    correo: EmailAccount
   ): WhatsAppMessage | null => {
     try {
       error.value = null
@@ -163,7 +231,7 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
    * Genera mensaje con selección manual de plataforma
    */
   const generarMensajeWhatsAppConVersion = (
-    correo: GameEmailAccount,
+    correo: EmailAccount,
     versionSeleccionada: 'PS4' | 'PS5'
   ): WhatsAppMessage | null => {
     try {
@@ -211,7 +279,7 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
   }
 
   /**
-   * Elimina los códigos usados de Firestore
+   * Elimina los códigos usados de Firestore (para juegos)
    */
   const eliminarCodigosUsados = async (
     plataforma: GamePlatform,
@@ -225,7 +293,7 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
     try {
       const correoRef = doc(db, 'games', plataforma, 'juegos', juegoId, 'correos', correoId)
 
-      console.log('🗑️ Eliminando códigos de Firestore...', {
+      console.log('🗑️ Eliminando códigos de Firestore (juego)...', {
         plataforma,
         juegoId,
         correoId,
@@ -248,7 +316,44 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
   }
 
   /**
-   * Proceso completo: generar mensaje, eliminar códigos y crear reporte
+   * Elimina los códigos usados de Firestore (para combos)
+   */
+  const eliminarCodigosUsadosCombo = async (
+    plataforma: ComboPlatform,
+    comboId: string,
+    correoId: string,
+    codigo1: string,
+    codigo2: string
+  ): Promise<boolean> => {
+    error.value = null
+
+    try {
+      const correoRef = doc(db, 'combos', plataforma, 'combos', comboId, 'correos', correoId)
+
+      console.log('🗑️ Eliminando códigos de Firestore (combo)...', {
+        plataforma,
+        comboId,
+        correoId,
+        codigo1,
+        codigo2
+      })
+
+      // Eliminar ambos códigos del array
+      await updateDoc(correoRef, {
+        codigosGenerados: arrayRemove(codigo1, codigo2)
+      })
+
+      console.log('✅ Códigos eliminados de Firestore')
+      return true
+    } catch (err) {
+      console.error('❌ Error eliminando códigos:', err)
+      error.value = err instanceof Error ? err.message : 'Error eliminando códigos'
+      return false
+    }
+  }
+
+  /**
+   * Proceso completo: generar mensaje, eliminar códigos y crear reporte (para juegos)
    */
   const generarYEliminarCodigos = async (
     correo: GameEmailAccount,
@@ -323,7 +428,110 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
           mensaje.version,
           clienteNombre,
           clienteTelefono,
-          tipoCuenta
+          tipoCuenta,
+          'juego' // Tipo de item
+        )
+        console.log('📝 Reporte guardado exitosamente')
+      } catch (reporteError) {
+        console.error('❌ Error guardando reporte:', reporteError)
+        // No fallar si el reporte falla, el mensaje ya se generó
+      }
+
+      return mensaje
+    } catch (err) {
+      console.error('❌ Error en proceso completo:', err)
+      error.value = err instanceof Error ? err.message : 'Error en el proceso'
+      return null
+    } finally {
+      isGenerating.value = false
+    }
+  }
+
+  /**
+   * Proceso completo: generar mensaje, eliminar códigos y crear reporte (para combos)
+   */
+  const generarYEliminarCodigosCombo = async (
+    correo: ComboEmailAccount,
+    plataforma: ComboPlatform,
+    comboId: string,
+    comboNombre: string,
+    uid: string,
+    email: string,
+    nombreUsuario: string,
+    rol: 'admin' | 'employee',
+    versionSeleccionada?: 'PS4' | 'PS5',
+    clienteNombre?: string,
+    clienteTelefono?: string,
+    tipoCuenta?: 'Principal PS4' | 'Secundaria PS4' | 'Principal PS5' | 'Secundaria PS5'
+  ): Promise<WhatsAppMessage | null> => {
+    isGenerating.value = true
+    error.value = null
+
+    try {
+      console.log('🔄 Iniciando generación de mensaje (combo)...', {
+        correo: correo.correo,
+        combo: comboNombre,
+        version: versionSeleccionada || 'auto',
+        codigosDisponibles: correo.codigosGenerados?.length || 0
+      })
+
+      // Validar que haya stock disponible
+      if (!validarStockDisponible(correo)) {
+        error.value = 'No hay cuentas con stock disponible'
+        console.error('❌ Error: No hay stock disponible')
+        return null
+      }
+
+      // Generar el mensaje
+      const mensaje = versionSeleccionada
+        ? generarMensajeWhatsAppConVersion(correo, versionSeleccionada)
+        : generarMensajeWhatsApp(correo)
+
+      if (!mensaje) {
+        const errorMsg = error.value || 'No se pudo generar el mensaje'
+        console.error('❌ Error generando mensaje:', errorMsg)
+        return null
+      }
+
+      console.log('✅ Mensaje generado, eliminando códigos...')
+
+      // Eliminar los códigos de Firestore
+      const eliminado = await eliminarCodigosUsadosCombo(
+        plataforma,
+        comboId,
+        correo.correo,
+        mensaje.codigoVerificacion1,
+        mensaje.codigoVerificacion2
+      )
+
+      if (!eliminado) {
+        error.value = 'El mensaje se generó pero hubo un error al eliminar los códigos'
+        console.warn('⚠️ Advertencia:', error.value)
+        // Continuar de todas formas, el mensaje ya se generó
+      } else {
+        console.log('✅ Códigos eliminados exitosamente')
+      }
+
+      // Crear reporte del mensaje generado
+      try {
+        await crearReporte(
+          uid,
+          email,
+          nombreUsuario,
+          rol,
+          comboNombre,
+          comboId,
+          correo.version,
+          correo.correo,
+          {
+            codigo1: mensaje.codigoVerificacion1,
+            codigo2: mensaje.codigoVerificacion2
+          },
+          mensaje.version,
+          clienteNombre,
+          clienteTelefono,
+          tipoCuenta,
+          'combo' // Tipo de item
         )
         console.log('📝 Reporte guardado exitosamente')
       } catch (reporteError) {
@@ -373,10 +581,14 @@ CODIGO DE Verficacion de Respaldo: ${codigo2}`
     isGenerating,
     error,
     validarCodigosDisponibles,
+    validarStockDisponible,
+    validarSlotsDisponibles,
     generarMensajeWhatsApp,
     generarMensajeWhatsAppConVersion,
     eliminarCodigosUsados,
+    eliminarCodigosUsadosCombo,
     generarYEliminarCodigos,
+    generarYEliminarCodigosCombo,
     copiarAlPortapapeles
   }
 }

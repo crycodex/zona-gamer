@@ -5,9 +5,12 @@ export interface Reporte {
   nombreUsuario?: string // Nombre del usuario
   rol: 'admin' | 'employee' // Rol del usuario
   
-  // Información del juego y correo
-  juegoNombre: string
-  juegoId: string
+  // Tipo de item (juego o combo)
+  tipoItem: 'juego' | 'combo'
+  
+  // Información del juego/combo y correo
+  juegoNombre: string // Nombre del juego o combo
+  juegoId: string // ID del juego o combo
   plataforma: 'PS4 & PS5' | 'PS4' | 'PS5'
   correoUtilizado: string
   
@@ -33,6 +36,7 @@ export interface Reporte {
 export interface ReporteFilters {
   uid?: string
   rol?: 'admin' | 'employee'
+  tipoItem?: 'juego' | 'combo'
   fechaInicio?: Date
   fechaFin?: Date
   plataforma?: 'PS4 & PS5' | 'PS4' | 'PS5'

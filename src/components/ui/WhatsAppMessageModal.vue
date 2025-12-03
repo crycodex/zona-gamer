@@ -70,6 +70,11 @@ const badgeVersionClass = computed(() => {
 const handleCopiar = async (): Promise<void> => {
   if (!props.mensaje) return
   
+  // Si no se ha guardado el cliente, guardarlo automáticamente al copiar
+  if (!clienteGuardado.value && clienteNombre.value.trim() && clienteTelefono.value.trim()) {
+    await handleGuardarCliente()
+  }
+  
   emit('copiar', props.mensaje.mensajeCompleto)
   copiado.value = true
   
@@ -220,8 +225,11 @@ watch(() => props.mostrar, (nuevoValor) => {
                 :class="guardando ? 'loading' : ''"
               >
                 <Save v-if="!guardando" :size="18" />
-                {{ guardando ? 'Guardando...' : 'Guardar Información del Cliente' }}
+                {{ guardando ? 'Guardando...' : 'Guardar y Ver Mensaje' }}
               </button>
+              <p class="text-xs text-center text-base-content/60 mt-2">
+                O haz clic en "Guardar y Copiar Mensaje" abajo
+              </p>
             </div>
           </div>
         </div>
@@ -272,7 +280,7 @@ watch(() => props.mostrar, (nuevoValor) => {
             <div class="alert alert-info mt-4 shadow-sm">
               <Sparkles :size="18" />
               <span class="text-sm">
-                <strong>Paso siguiente:</strong> Guarda la información del cliente para ver el mensaje completo
+                <strong>Paso siguiente:</strong> Completa los datos del cliente y haz clic en cualquier botón de guardado o copia
               </span>
             </div>
           </div>
@@ -369,16 +377,16 @@ watch(() => props.mostrar, (nuevoValor) => {
           Cerrar
         </button>
         <button 
-          v-if="clienteGuardado"
           @click="handleCopiar" 
           :class="[
             'btn gap-2 shadow-lg hover:shadow-xl transition-all',
-            copiado ? 'btn-success' : 'btn-primary'
+            copiado ? 'btn-success' : clienteGuardado ? 'btn-primary' : 'btn-warning'
           ]"
+          :disabled="!clienteNombre.trim() || !clienteTelefono.trim() || guardando"
         >
           <CheckCircle v-if="copiado" :size="20" />
           <Copy v-else :size="20" />
-          {{ copiado ? '¡Copiado al Portapapeles!' : 'Copiar Mensaje' }}
+          {{ copiado ? '¡Copiado al Portapapeles!' : clienteGuardado ? 'Copiar Mensaje' : 'Guardar y Copiar Mensaje' }}
         </button>
       </div>
 

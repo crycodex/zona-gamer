@@ -1,83 +1,85 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { useGames } from '@/composables/useGames'
+import { useCombos } from '@/composables/useCombos'
 import { useWhatsAppMessages } from '@/composables/useWhatsAppMessages'
 import { useRoles } from '@/composables/useRoles'
 import { useReportes } from '@/composables/useReportes'
-import { Gamepad2, Search, RefreshCw, MessageCircle } from 'lucide-vue-next'
+import { Package, RefreshCw, MessageCircle } from 'lucide-vue-next'
 import WhatsAppMessageModal from '@/components/ui/WhatsAppMessageModal.vue'
-import type { GameSummary, GameEmailAccount, GamePlatform, AccountType } from '@/types/game'
+import type { ComboSummary, ComboEmailAccount, ComboPlatform, AccountType } from '@/types/combo'
 import type { WhatsAppMessage } from '@/composables/useWhatsAppMessages'
 
 const {
-  games,
-  isLoadingGames,
-  isSyncingGames,
-  cargarJuegos,
-  sincronizarJuegos,
-  cargarCorreosJuego,
-  generarIdJuego
-} = useGames()
+  combos,
+  isLoadingCombos,
+  isSyncingCombos,
+  cargarCombos,
+  sincronizarCombos,
+  cargarCorreosCombo,
+  generarIdCombo,
+  actualizarCorreoCombo
+} = useCombos()
 
 const {
   validarCodigosDisponibles,
-  generarYEliminarCodigos,
+  validarStockDisponible,
+  validarSlotsDisponibles,
+  generarYEliminarCodigosCombo,
   copiarAlPortapapeles,
   isGenerating
 } = useWhatsAppMessages()
 
 const { currentUserData } = useRoles()
 const { crearReporte } = useReportes()
-const { actualizarCorreoJuego } = useGames()
 
 // Estados principales
-const plataformaSeleccionada = ref<GamePlatform>('PS4 & PS5')
+const plataformaSeleccionada = ref<ComboPlatform>('PS4 & PS5')
 const searchTerm = ref('')
-const vistaActual = ref<'juegos' | 'correos'>('juegos')
-const juegoSeleccionado = ref<GameSummary | null>(null)
-const correosJuego = ref<GameEmailAccount[]>([])
+const vistaActual = ref<'combos' | 'correos'>('combos')
+const comboSeleccionado = ref<ComboSummary | null>(null)
+const correosCombo = ref<ComboEmailAccount[]>([])
 const isLoadingCorreos = ref(false)
 
 // Estados para modales
 const showEmailDetails = ref(false)
-const selectedEmailDetails = ref<GameEmailAccount | null>(null)
+const selectedEmailDetails = ref<ComboEmailAccount | null>(null)
 const showWhatsAppModal = ref(false)
 const mensajeWhatsApp = ref<WhatsAppMessage | null>(null)
-const datosCliente = ref<{ nombre: string; telefono: string; tipoCuenta: import('@/types/game').AccountType } | null>(null)
+const datosCliente = ref<{ nombre: string; telefono: string; tipoCuenta: AccountType } | null>(null)
 
 // Estados para filtros
 const promoFiltro = ref<'todas' | 'oferta' | 'promocion' | 'ninguna'>('todas')
 const stockFiltro = ref<'todas' | 'con' | 'sin'>('todas')
-const sortBy = ref<'nombre' | 'costo' | 'correos' | 'stock'>('nombre')
+const sortBy = ref<'nombre' | 'precio' | 'correos' | 'stock'>('nombre')
 const sortOrder = ref<'asc' | 'desc'>('asc')
 
-// Computed para juegos filtrados
-const juegosFiltrados = computed(() => {
-  let resultado = games.value
+// Computed para combos filtrados
+const combosFiltrados = computed(() => {
+  let resultado = combos.value
 
   // Filtro por plataforma
   if (plataformaSeleccionada.value !== 'PS4 & PS5') {
     resultado = resultado.filter(
-      juego => juego.version === plataformaSeleccionada.value || juego.version === 'PS4 & PS5'
+      combo => combo.version === plataformaSeleccionada.value || combo.version === 'PS4 & PS5'
     )
   }
 
   // Filtro por búsqueda
   if (searchTerm.value.trim()) {
     const termino = searchTerm.value.trim().toLowerCase()
-    resultado = resultado.filter(juego => juego.nombre.toLowerCase().includes(termino))
+    resultado = resultado.filter(combo => combo.nombre.toLowerCase().includes(termino))
   }
 
   // Filtro por promoción
   if (promoFiltro.value !== 'todas') {
-    resultado = resultado.filter(juego => juego.tipoPromocion === promoFiltro.value)
+    resultado = resultado.filter(combo => combo.tipoPromocion === promoFiltro.value)
   }
 
   // Filtro por stock
   if (stockFiltro.value === 'con') {
-    resultado = resultado.filter(juego => (juego.stockAccounts ?? 0) > 0)
+    resultado = resultado.filter(combo => (combo.stockAccounts ?? 0) > 0)
   } else if (stockFiltro.value === 'sin') {
-    resultado = resultado.filter(juego => (juego.stockAccounts ?? 0) === 0)
+    resultado = resultado.filter(combo => (combo.stockAccounts ?? 0) === 0)
   }
 
   // Ordenamiento
@@ -87,10 +89,8 @@ const juegosFiltrados = computed(() => {
       case 'nombre':
         comparacion = a.nombre.localeCompare(b.nombre)
         break
-      case 'costo':
-        const precioMinA = Math.min(a.precios.ps4Principal, a.precios.ps4Secundaria, a.precios.ps5Principal, a.precios.ps5Secundaria)
-        const precioMinB = Math.min(b.precios.ps4Principal, b.precios.ps4Secundaria, b.precios.ps5Principal, b.precios.ps5Secundaria)
-        comparacion = precioMinA - precioMinB
+      case 'precio':
+        comparacion = (a.precio || 0) - (b.precio || 0)
         break
       case 'correos':
         comparacion = a.totalCorreos - b.totalCorreos
@@ -106,26 +106,26 @@ const juegosFiltrados = computed(() => {
 })
 
 // Funciones principales
-const cargarJuegosPorPlataforma = async (): Promise<void> => {
-  if (vistaActual.value === 'juegos') juegoSeleccionado.value = null
-  await cargarJuegos(plataformaSeleccionada.value, false)
+const cargarCombosPorPlataforma = async (): Promise<void> => {
+  if (vistaActual.value === 'combos') comboSeleccionado.value = null
+  await cargarCombos(plataformaSeleccionada.value, false)
 }
 
 const handleSincronizar = async (): Promise<void> => {
   try {
-    await sincronizarJuegos(plataformaSeleccionada.value)
+    await sincronizarCombos(plataformaSeleccionada.value)
   } catch (error) {
     console.error('Error sincronizando:', error)
   }
 }
 
-const verCorreosJuego = async (juego: GameSummary): Promise<void> => {
-  juegoSeleccionado.value = juego
+const verCorreosCombo = async (combo: ComboSummary): Promise<void> => {
+  comboSeleccionado.value = combo
   isLoadingCorreos.value = true
   vistaActual.value = 'correos'
 
   try {
-    correosJuego.value = await cargarCorreosJuego('PS4 & PS5', juego.id)
+    correosCombo.value = await cargarCorreosCombo('PS4 & PS5', combo.id)
   } catch (error) {
     console.error('Error cargando correos:', error)
   } finally {
@@ -133,13 +133,13 @@ const verCorreosJuego = async (juego: GameSummary): Promise<void> => {
   }
 }
 
-const volverAJuegos = (): void => {
-  vistaActual.value = 'juegos'
-  juegoSeleccionado.value = null
-  correosJuego.value = []
+const volverACombos = (): void => {
+  vistaActual.value = 'combos'
+  comboSeleccionado.value = null
+  correosCombo.value = []
 }
 
-const verDetallesCorreo = (correo: GameEmailAccount): void => {
+const verDetallesCorreo = (correo: ComboEmailAccount): void => {
   selectedEmailDetails.value = correo
   showEmailDetails.value = true
 }
@@ -150,16 +150,28 @@ const cerrarDetallesCorreo = (): void => {
 }
 
 // WhatsApp
-const abrirModalWhatsApp = async (correo: GameEmailAccount, version?: 'PS4' | 'PS5'): Promise<void> => {
+const abrirModalWhatsApp = async (correo: ComboEmailAccount, version?: 'PS4' | 'PS5'): Promise<void> => {
   // Validar códigos disponibles
   if (!validarCodigosDisponibles(correo)) {
     alert('No hay suficientes códigos disponibles (se requieren al menos 2)')
     return
   }
 
+  // Validar stock disponible
+  if (!validarStockDisponible(correo)) {
+    alert('No hay cuentas con stock disponible. No se puede generar el mensaje.')
+    return
+  }
+
+  // Validar que haya slots disponibles (no estén ocupados los 4 tipos de cuenta)
+  if (!validarSlotsDisponibles(correo)) {
+    alert('No se puede generar el mensaje: Ya están ocupados los 4 slots de cuenta (Principal PS4, Secundaria PS4, Principal PS5, Secundaria PS5)')
+    return
+  }
+
   // Validar información del usuario
-  if (!juegoSeleccionado.value) {
-    alert('Error: No hay juego seleccionado')
+  if (!comboSeleccionado.value) {
+    alert('Error: No hay combo seleccionado')
     return
   }
 
@@ -175,21 +187,22 @@ const abrirModalWhatsApp = async (correo: GameEmailAccount, version?: 'PS4' | 'P
   }
 
   try {
-    const juegoId = generarIdJuego(juegoSeleccionado.value.nombre)
+    const comboId = generarIdCombo(comboSeleccionado.value.nombre)
     
-    console.log('🔄 Generando mensaje WhatsApp...', {
+    console.log('🔄 Generando mensaje WhatsApp (combo)...', {
       correo: correo.correo,
-      juego: juegoSeleccionado.value.nombre,
+      combo: comboSeleccionado.value.nombre,
       version: version || 'auto',
       plataforma: plataformaSeleccionada.value,
-      codigosDisponibles: correo.codigosGenerados?.length || 0
+      codigosDisponibles: correo.codigosGenerados?.length || 0,
+      stockDisponible: correo.cuentas?.filter(c => c?.hasStock === true).length || 0
     })
 
-    const mensaje = await generarYEliminarCodigos(
+    const mensaje = await generarYEliminarCodigosCombo(
       correo,
       plataformaSeleccionada.value,
-      juegoId,
-      juegoSeleccionado.value.nombre,
+      comboId,
+      comboSeleccionado.value.nombre,
       currentUserData.value.uid,
       currentUserData.value.email,
       currentUserData.value.displayName || currentUserData.value.email || 'Usuario',
@@ -203,17 +216,17 @@ const abrirModalWhatsApp = async (correo: GameEmailAccount, version?: 'PS4' | 'P
       showWhatsAppModal.value = true
       
       // Actualizar la lista de correos para reflejar los códigos eliminados
-      await verCorreosJuego(juegoSeleccionado.value)
+      await verCorreosCombo(comboSeleccionado.value)
       
       // Actualizar el modal de detalles si está abierto
       if (showEmailDetails.value && selectedEmailDetails.value?.correo === correo.correo) {
-        const correoActualizado = correosJuego.value.find(c => c.correo === correo.correo)
+        const correoActualizado = correosCombo.value.find(c => c.correo === correo.correo)
         if (correoActualizado) {
           selectedEmailDetails.value = correoActualizado
         }
       }
     } else {
-      alert('No se pudo generar el mensaje. Por favor, verifica que haya códigos disponibles y que el correo tenga contraseña configurada.')
+      alert('No se pudo generar el mensaje. Por favor, verifica que haya códigos y stock disponibles.')
     }
   } catch (error) {
     console.error('❌ Error generando mensaje:', error)
@@ -234,13 +247,13 @@ const copiarMensaje = async (mensaje: string): Promise<void> => {
 
 // Guardar datos del cliente desde el modal
 const handleGuardarCliente = async (datos: { nombre: string; telefono: string; tipoCuenta: AccountType }): Promise<void> => {
-  if (!juegoSeleccionado.value || !selectedEmailDetails.value || !currentUserData.value) {
+  if (!comboSeleccionado.value || !selectedEmailDetails.value || !currentUserData.value) {
     alert('Error: Información incompleta para guardar cliente')
     return
   }
 
   try {
-    const juegoId = generarIdJuego(juegoSeleccionado.value.nombre)
+    const comboId = generarIdCombo(comboSeleccionado.value.nombre)
     const correo = selectedEmailDetails.value
 
     // Actualizar el correo en Firestore agregando la cuenta del cliente
@@ -267,9 +280,9 @@ const handleGuardarCliente = async (datos: { nombre: string; telefono: string; t
       })
     }
 
-    await actualizarCorreoJuego(
+    await actualizarCorreoCombo(
       plataformaSeleccionada.value,
-      juegoId,
+      comboId,
       correo.correo,
       { cuentas: cuentasActualizadas }
     )
@@ -280,8 +293,8 @@ const handleGuardarCliente = async (datos: { nombre: string; telefono: string; t
       currentUserData.value.email,
       currentUserData.value.displayName || currentUserData.value.email || 'Usuario',
       currentUserData.value.role as 'admin' | 'employee',
-      juegoSeleccionado.value.nombre,
-      juegoId,
+      comboSeleccionado.value.nombre,
+      comboId,
       correo.version,
       correo.correo,
       {
@@ -291,15 +304,16 @@ const handleGuardarCliente = async (datos: { nombre: string; telefono: string; t
       mensajeWhatsApp.value?.version || 'PS4',
       datos.nombre,
       datos.telefono,
-      datos.tipoCuenta
+      datos.tipoCuenta,
+      'combo' // Tipo de item
     )
 
     // Actualizar la lista de correos
-    await verCorreosJuego(juegoSeleccionado.value)
+    await verCorreosCombo(comboSeleccionado.value)
     
     // Actualizar el modal de detalles si está abierto
     if (showEmailDetails.value) {
-      const correoActualizado = correosJuego.value.find(c => c.correo === correo.correo)
+      const correoActualizado = correosCombo.value.find(c => c.correo === correo.correo)
       if (correoActualizado) {
         selectedEmailDetails.value = correoActualizado
       }
@@ -337,7 +351,7 @@ const iniciarSincronizacionAutomatica = (): void => {
   syncInterval = setInterval(async () => {
     if (plataformaSeleccionada.value) {
       try {
-        await sincronizarJuegos(plataformaSeleccionada.value)
+        await sincronizarCombos(plataformaSeleccionada.value)
       } catch (error) {
         console.error('Error en sincronización automática:', error)
       }
@@ -354,12 +368,12 @@ const detenerSincronizacionAutomatica = (): void => {
 
 // Watchers
 watch(plataformaSeleccionada, async () => {
-  await cargarJuegosPorPlataforma()
+  await cargarCombosPorPlataforma()
 })
 
 // Lifecycle
 onMounted(async () => {
-  await cargarJuegosPorPlataforma()
+  await cargarCombosPorPlataforma()
   iniciarSincronizacionAutomatica()
 })
 
@@ -369,7 +383,7 @@ onBeforeUnmount(() => {
 
 // Exponer función para navegar desde fuera
 defineExpose({
-  verCorreosJuego
+  verCorreosCombo
 })
 </script>
 
@@ -379,22 +393,22 @@ defineExpose({
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
       </svg>
-      <span><strong>Modo Solo Lectura:</strong> Puedes consultar los juegos y generar mensajes WhatsApp, pero no modificar datos.</span>
+      <span><strong>Modo Solo Lectura:</strong> Puedes consultar los combos y generar mensajes WhatsApp, pero no modificar datos.</span>
     </div>
 
     <!-- Breadcrumb -->
     <div class="breadcrumbs mb-4">
       <ul>
-        <li v-if="vistaActual === 'juegos'"><span class="font-semibold">Juegos</span></li>
+        <li v-if="vistaActual === 'combos'"><span class="font-semibold">Combos</span></li>
         <li v-if="vistaActual === 'correos'">
-          <button @click="volverAJuegos" class="text-primary hover:underline">Juegos</button>
+          <button @click="volverACombos" class="text-primary hover:underline">Combos</button>
         </li>
-        <li v-if="vistaActual === 'correos'">{{ juegoSeleccionado?.nombre }}</li>
+        <li v-if="vistaActual === 'correos'">{{ comboSeleccionado?.nombre }}</li>
       </ul>
     </div>
 
-    <!-- Vista de Juegos -->
-    <div v-if="vistaActual === 'juegos'">
+    <!-- Vista de Combos -->
+    <div v-if="vistaActual === 'combos'">
       <!-- Filtros -->
       <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
@@ -409,8 +423,8 @@ defineExpose({
             </div>
 
             <div class="form-control">
-              <label class="label"><span class="label-text font-semibold">Buscar Juego</span></label>
-              <input v-model="searchTerm" type="text" placeholder="Nombre del juego..." class="input input-bordered" />
+              <label class="label"><span class="label-text font-semibold">Buscar Combo</span></label>
+              <input v-model="searchTerm" type="text" placeholder="Nombre del combo..." class="input input-bordered" />
             </div>
 
             <div class="form-control">
@@ -439,7 +453,7 @@ defineExpose({
               <div class="join w-full">
                 <select v-model="sortBy" class="select select-bordered select-sm join-item flex-1">
                   <option value="nombre">Nombre (A-Z)</option>
-                  <option value="costo">Precio</option>
+                  <option value="precio">Precio</option>
                   <option value="correos">Cuentas</option>
                   <option value="stock">Stock</option>
                 </select>
@@ -461,54 +475,52 @@ defineExpose({
               <button 
                 class="btn btn-outline btn-primary gap-2 w-full"
                 @click="handleSincronizar"
-                :disabled="isSyncingGames || isLoadingGames"
+                :disabled="isSyncingCombos || isLoadingCombos"
               >
-                <RefreshCw :size="18" :class="{ 'animate-spin': isSyncingGames }" />
-                {{ isSyncingGames ? 'Sincronizando...' : 'Sincronizar' }}
+                <RefreshCw :size="18" :class="{ 'animate-spin': isSyncingCombos }" />
+                {{ isSyncingCombos ? 'Sincronizando...' : 'Sincronizar' }}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Lista de Juegos -->
-      <div v-if="isLoadingGames" class="flex justify-center p-8">
+      <!-- Lista de Combos -->
+      <div v-if="isLoadingCombos" class="flex justify-center p-8">
         <span class="loading loading-spinner loading-lg"></span>
       </div>
 
-      <div v-else-if="juegosFiltrados.length === 0" class="card bg-base-100 shadow-xl">
+      <div v-else-if="combosFiltrados.length === 0" class="card bg-base-100 shadow-xl">
         <div class="card-body text-center">
-          <p class="text-base-content/60">No se encontraron juegos</p>
+          <p class="text-base-content/60">No se encontraron combos</p>
         </div>
       </div>
 
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
-          v-for="juego in juegosFiltrados"
-          :key="juego.id"
+          v-for="combo in combosFiltrados"
+          :key="combo.id"
           class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow cursor-pointer"
-          @click="verCorreosJuego(juego)"
+          @click="verCorreosCombo(combo)"
         >
           <figure class="h-48 overflow-hidden">
-            <img v-if="juego.foto" :src="juego.foto" :alt="juego.nombre" class="w-full h-full object-cover" />
+            <img v-if="combo.foto" :src="combo.foto" :alt="combo.nombre" class="w-full h-full object-cover" />
             <div v-else class="w-full h-full bg-base-300 flex items-center justify-center">
-              <Gamepad2 :size="48" class="text-base-content/30" />
+              <Package :size="48" class="text-base-content/30" />
             </div>
           </figure>
           <div class="card-body">
-            <h2 class="card-title">{{ juego.nombre }}</h2>
+            <h2 class="card-title">{{ combo.nombre }}</h2>
             <div class="flex flex-wrap gap-2 mt-2">
-              <div class="badge badge-primary badge-sm">PS4 P: {{ formatearPrecio(juego.precios.ps4Principal) }}</div>
-              <div class="badge badge-secondary badge-sm">PS4 S: {{ formatearPrecio(juego.precios.ps4Secundaria) }}</div>
-              <div class="badge badge-success badge-sm">PS5 P: {{ formatearPrecio(juego.precios.ps5Principal) }}</div>
-              <div class="badge badge-accent badge-sm">PS5 S: {{ formatearPrecio(juego.precios.ps5Secundaria) }}</div>
-              <div class="badge badge-secondary">{{ juego.version }}</div>
-              <div v-if="juego.tipoPromocion === 'oferta'" class="badge badge-warning">Oferta</div>
-              <div v-if="juego.tipoPromocion === 'promocion'" class="badge badge-info">Promoción</div>
+              <div class="badge badge-primary">{{ formatearPrecio(combo.precio || 0) }}</div>
+              <div class="badge badge-secondary">{{ combo.version }}</div>
+              <div v-if="combo.tipoPromocion === 'oferta'" class="badge badge-warning">Oferta</div>
+              <div v-if="combo.tipoPromocion === 'promocion'" class="badge badge-info">Promoción</div>
             </div>
             <div class="mt-4 text-sm text-base-content/60">
-              <p>📧 {{ juego.totalCorreos }} cuenta(s)</p>
-              <p>📦 {{ juego.stockAccounts }} con stock</p>
+              <p>📧 {{ combo.totalCorreos }} cuenta(s)</p>
+              <p>📦 {{ combo.stockAccounts }} con stock</p>
+              <p>🎮 {{ combo.juegos?.length || 0 }} juego(s)</p>
             </div>
           </div>
         </div>
@@ -516,15 +528,15 @@ defineExpose({
     </div>
 
     <!-- Vista de Correos -->
-    <div v-if="vistaActual === 'correos' && juegoSeleccionado">
+    <div v-if="vistaActual === 'correos' && comboSeleccionado">
       <div class="card bg-base-100 shadow-xl mb-6">
         <div class="card-body">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-2xl font-bold">{{ juegoSeleccionado.nombre }}</h2>
-              <p class="text-base-content/60 mt-1">{{ formatearPrecio(Math.min(juegoSeleccionado.precios.ps4Principal, juegoSeleccionado.precios.ps4Secundaria, juegoSeleccionado.precios.ps5Principal, juegoSeleccionado.precios.ps5Secundaria)) }} • {{ juegoSeleccionado.version }}</p>
+              <h2 class="text-2xl font-bold">{{ comboSeleccionado.nombre }}</h2>
+              <p class="text-base-content/60 mt-1">{{ formatearPrecio(comboSeleccionado.precio || 0) }} • {{ comboSeleccionado.version }}</p>
             </div>
-            <button @click="volverAJuegos" class="btn btn-ghost">← Volver a Juegos</button>
+            <button @click="volverACombos" class="btn btn-ghost">← Volver a Combos</button>
           </div>
         </div>
       </div>
@@ -533,14 +545,14 @@ defineExpose({
         <span class="loading loading-spinner loading-lg"></span>
       </div>
 
-      <div v-else-if="correosJuego.length === 0" class="card bg-base-100 shadow-xl">
+      <div v-else-if="correosCombo.length === 0" class="card bg-base-100 shadow-xl">
         <div class="card-body text-center">
           <p class="text-base-content/60">No hay correos registrados</p>
         </div>
       </div>
 
       <div v-else class="space-y-4">
-        <div v-for="correo in correosJuego" :key="correo.correo" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
+        <div v-for="correo in correosCombo" :key="correo.correo" class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
           <div class="card-body">
             <div class="flex justify-between items-start">
               <div class="cursor-pointer flex-1" @click="verDetallesCorreo(correo)">
@@ -551,6 +563,9 @@ defineExpose({
                 <div class="badge badge-lg">{{ correo.cuentas.length }} cuenta(s)</div>
                 <div class="badge" :class="validarCodigosDisponibles(correo) ? 'badge-success' : 'badge-error'">
                   {{ correo.codigosGenerados?.length || 0 }} códigos
+                </div>
+                <div class="badge" :class="validarStockDisponible(correo) ? 'badge-success' : 'badge-warning'">
+                  {{ correo.cuentas?.filter(c => c?.hasStock === true).length || 0 }} con stock
                 </div>
               </div>
             </div>
@@ -566,15 +581,15 @@ defineExpose({
                   tabindex="0" 
                   :class="[
                     'btn btn-sm gap-2',
-                    validarCodigosDisponibles(correo) && !isGenerating ? 'btn-success' : 'btn-disabled'
+                    validarCodigosDisponibles(correo) && validarStockDisponible(correo) && validarSlotsDisponibles(correo) && !isGenerating ? 'btn-success' : 'btn-disabled'
                   ]"
-                  :title="!validarCodigosDisponibles(correo) ? 'Se requieren al menos 2 códigos disponibles' : ''"
+                  :title="!validarCodigosDisponibles(correo) ? 'Se requieren al menos 2 códigos disponibles' : !validarStockDisponible(correo) ? 'No hay stock disponible' : !validarSlotsDisponibles(correo) ? 'Ya están ocupados los 4 slots de cuenta' : ''"
                 >
                   <MessageCircle :size="16" />
                   {{ isGenerating ? 'Generando...' : 'Generar Mensaje' }}
                 </label>
                 <ul 
-                  v-if="validarCodigosDisponibles(correo) && !isGenerating"
+                  v-if="validarCodigosDisponibles(correo) && validarStockDisponible(correo) && validarSlotsDisponibles(correo) && !isGenerating"
                   tabindex="0" 
                   class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-box w-52"
                 >
@@ -587,10 +602,10 @@ defineExpose({
                 @click.stop="abrirModalWhatsApp(correo)"
                 :class="[
                   'btn btn-sm gap-2',
-                  validarCodigosDisponibles(correo) && !isGenerating ? 'btn-success' : 'btn-disabled'
+                  validarCodigosDisponibles(correo) && validarStockDisponible(correo) && validarSlotsDisponibles(correo) && !isGenerating ? 'btn-success' : 'btn-disabled'
                 ]"
-                :disabled="!validarCodigosDisponibles(correo) || isGenerating"
-                :title="!validarCodigosDisponibles(correo) ? 'Se requieren al menos 2 códigos disponibles' : ''"
+                :disabled="!validarCodigosDisponibles(correo) || !validarStockDisponible(correo) || !validarSlotsDisponibles(correo) || isGenerating"
+                :title="!validarCodigosDisponibles(correo) ? 'Se requieren al menos 2 códigos disponibles' : !validarStockDisponible(correo) ? 'No hay stock disponible' : !validarSlotsDisponibles(correo) ? 'Ya están ocupados los 4 slots de cuenta' : ''"
               >
                 <MessageCircle :size="16" />
                 {{ isGenerating ? 'Generando...' : 'Generar Mensaje' }}
@@ -635,8 +650,13 @@ defineExpose({
                     <p class="font-medium">{{ cuenta.nombre }}</p>
                     <p class="text-sm text-base-content/60">📱 {{ cuenta.telefono }}</p>
                   </div>
-                  <div class="badge" :class="cuenta.tipo.includes('Principal') ? 'badge-primary' : 'badge-secondary'">
-                    {{ cuenta.tipo }}
+                  <div class="flex gap-2">
+                    <div class="badge" :class="cuenta.tipo.includes('Principal') ? 'badge-primary' : 'badge-secondary'">
+                      {{ cuenta.tipo }}
+                    </div>
+                    <div v-if="cuenta.hasStock" class="badge badge-success">
+                      Stock
+                    </div>
                   </div>
                 </div>
               </div>
@@ -652,15 +672,15 @@ defineExpose({
               tabindex="0"
               :class="[
                 'btn gap-2',
-                validarCodigosDisponibles(selectedEmailDetails) && !isGenerating ? 'btn-success' : 'btn-disabled'
+                validarCodigosDisponibles(selectedEmailDetails) && validarStockDisponible(selectedEmailDetails) && validarSlotsDisponibles(selectedEmailDetails) && !isGenerating ? 'btn-success' : 'btn-disabled'
               ]"
-              :title="!validarCodigosDisponibles(selectedEmailDetails) ? 'Se requieren al menos 2 códigos disponibles' : ''"
+              :title="!validarCodigosDisponibles(selectedEmailDetails) ? 'Se requieren al menos 2 códigos disponibles' : !validarStockDisponible(selectedEmailDetails) ? 'No hay stock disponible' : !validarSlotsDisponibles(selectedEmailDetails) ? 'Ya están ocupados los 4 slots de cuenta' : ''"
             >
               <MessageCircle :size="20" />
               {{ isGenerating ? 'Generando...' : 'Generar Mensaje' }}
             </label>
             <ul 
-              v-if="validarCodigosDisponibles(selectedEmailDetails) && !isGenerating"
+              v-if="validarCodigosDisponibles(selectedEmailDetails) && validarStockDisponible(selectedEmailDetails) && validarSlotsDisponibles(selectedEmailDetails) && !isGenerating"
               tabindex="0" 
               class="dropdown-content z-1 menu p-2 shadow-lg bg-base-100 rounded-box w-52 mb-2"
             >
@@ -673,10 +693,10 @@ defineExpose({
             @click="abrirModalWhatsApp(selectedEmailDetails)"
             :class="[
               'btn gap-2',
-              validarCodigosDisponibles(selectedEmailDetails) && !isGenerating ? 'btn-success' : 'btn-disabled'
+              validarCodigosDisponibles(selectedEmailDetails) && validarStockDisponible(selectedEmailDetails) && validarSlotsDisponibles(selectedEmailDetails) && !isGenerating ? 'btn-success' : 'btn-disabled'
             ]"
-            :disabled="!validarCodigosDisponibles(selectedEmailDetails) || isGenerating"
-            :title="!validarCodigosDisponibles(selectedEmailDetails) ? 'Se requieren al menos 2 códigos disponibles' : ''"
+            :disabled="!validarCodigosDisponibles(selectedEmailDetails) || !validarStockDisponible(selectedEmailDetails) || !validarSlotsDisponibles(selectedEmailDetails) || isGenerating"
+            :title="!validarCodigosDisponibles(selectedEmailDetails) ? 'Se requieren al menos 2 códigos disponibles' : !validarStockDisponible(selectedEmailDetails) ? 'No hay stock disponible' : !validarSlotsDisponibles(selectedEmailDetails) ? 'Ya están ocupados los 4 slots de cuenta' : ''"
           >
             <MessageCircle :size="20" />
             {{ isGenerating ? 'Generando...' : 'Generar Mensaje' }}
@@ -700,4 +720,3 @@ defineExpose({
     />
   </div>
 </template>
-

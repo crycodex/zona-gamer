@@ -21,6 +21,7 @@ const {
 
 const {
   validarCodigosDisponibles,
+  validarSlotsDisponibles,
   generarYEliminarCodigos,
   copiarAlPortapapeles,
   isGenerating
@@ -154,6 +155,12 @@ const abrirModalWhatsApp = async (correo: GameEmailAccount, version?: 'PS4' | 'P
   // Validar códigos disponibles
   if (!validarCodigosDisponibles(correo)) {
     alert('No hay suficientes códigos disponibles (se requieren al menos 2)')
+    return
+  }
+
+  // Validar que haya slots disponibles (no estén ocupados los 4 tipos de cuenta)
+  if (!validarSlotsDisponibles(correo)) {
+    alert('No se puede generar el mensaje: Ya están ocupados los 4 slots de cuenta (Principal PS4, Secundaria PS4, Principal PS5, Secundaria PS5)')
     return
   }
 
@@ -566,15 +573,15 @@ defineExpose({
                   tabindex="0" 
                   :class="[
                     'btn btn-sm gap-2',
-                    validarCodigosDisponibles(correo) && !isGenerating ? 'btn-success' : 'btn-disabled'
+                    validarCodigosDisponibles(correo) && validarSlotsDisponibles(correo) && !isGenerating ? 'btn-success' : 'btn-disabled'
                   ]"
-                  :title="!validarCodigosDisponibles(correo) ? 'Se requieren al menos 2 códigos disponibles' : ''"
+                  :title="!validarCodigosDisponibles(correo) ? 'Se requieren al menos 2 códigos disponibles' : !validarSlotsDisponibles(correo) ? 'Ya están ocupados los 4 slots de cuenta' : ''"
                 >
                   <MessageCircle :size="16" />
                   {{ isGenerating ? 'Generando...' : 'Generar Mensaje' }}
                 </label>
                 <ul 
-                  v-if="validarCodigosDisponibles(correo) && !isGenerating"
+                  v-if="validarCodigosDisponibles(correo) && validarSlotsDisponibles(correo) && !isGenerating"
                   tabindex="0" 
                   class="dropdown-content z-50 menu p-2 shadow-lg bg-base-100 rounded-box w-52"
                 >
@@ -587,10 +594,10 @@ defineExpose({
                 @click.stop="abrirModalWhatsApp(correo)"
                 :class="[
                   'btn btn-sm gap-2',
-                  validarCodigosDisponibles(correo) && !isGenerating ? 'btn-success' : 'btn-disabled'
+                  validarCodigosDisponibles(correo) && validarSlotsDisponibles(correo) && !isGenerating ? 'btn-success' : 'btn-disabled'
                 ]"
-                :disabled="!validarCodigosDisponibles(correo) || isGenerating"
-                :title="!validarCodigosDisponibles(correo) ? 'Se requieren al menos 2 códigos disponibles' : ''"
+                :disabled="!validarCodigosDisponibles(correo) || !validarSlotsDisponibles(correo) || isGenerating"
+                :title="!validarCodigosDisponibles(correo) ? 'Se requieren al menos 2 códigos disponibles' : !validarSlotsDisponibles(correo) ? 'Ya están ocupados los 4 slots de cuenta' : ''"
               >
                 <MessageCircle :size="16" />
                 {{ isGenerating ? 'Generando...' : 'Generar Mensaje' }}
@@ -652,15 +659,15 @@ defineExpose({
               tabindex="0"
               :class="[
                 'btn gap-2',
-                validarCodigosDisponibles(selectedEmailDetails) && !isGenerating ? 'btn-success' : 'btn-disabled'
+                validarCodigosDisponibles(selectedEmailDetails) && validarSlotsDisponibles(selectedEmailDetails) && !isGenerating ? 'btn-success' : 'btn-disabled'
               ]"
-              :title="!validarCodigosDisponibles(selectedEmailDetails) ? 'Se requieren al menos 2 códigos disponibles' : ''"
+              :title="!validarCodigosDisponibles(selectedEmailDetails) ? 'Se requieren al menos 2 códigos disponibles' : !validarSlotsDisponibles(selectedEmailDetails) ? 'Ya están ocupados los 4 slots de cuenta' : ''"
             >
               <MessageCircle :size="20" />
               {{ isGenerating ? 'Generando...' : 'Generar Mensaje' }}
             </label>
             <ul 
-              v-if="validarCodigosDisponibles(selectedEmailDetails) && !isGenerating"
+              v-if="validarCodigosDisponibles(selectedEmailDetails) && validarSlotsDisponibles(selectedEmailDetails) && !isGenerating"
               tabindex="0" 
               class="dropdown-content z-1 menu p-2 shadow-lg bg-base-100 rounded-box w-52 mb-2"
             >
@@ -673,10 +680,10 @@ defineExpose({
             @click="abrirModalWhatsApp(selectedEmailDetails)"
             :class="[
               'btn gap-2',
-              validarCodigosDisponibles(selectedEmailDetails) && !isGenerating ? 'btn-success' : 'btn-disabled'
+              validarCodigosDisponibles(selectedEmailDetails) && validarSlotsDisponibles(selectedEmailDetails) && !isGenerating ? 'btn-success' : 'btn-disabled'
             ]"
-            :disabled="!validarCodigosDisponibles(selectedEmailDetails) || isGenerating"
-            :title="!validarCodigosDisponibles(selectedEmailDetails) ? 'Se requieren al menos 2 códigos disponibles' : ''"
+            :disabled="!validarCodigosDisponibles(selectedEmailDetails) || !validarSlotsDisponibles(selectedEmailDetails) || isGenerating"
+            :title="!validarCodigosDisponibles(selectedEmailDetails) ? 'Se requieren al menos 2 códigos disponibles' : !validarSlotsDisponibles(selectedEmailDetails) ? 'Ya están ocupados los 4 slots de cuenta' : ''"
           >
             <MessageCircle :size="20" />
             {{ isGenerating ? 'Generando...' : 'Generar Mensaje' }}

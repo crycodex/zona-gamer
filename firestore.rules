@@ -160,6 +160,7 @@ service cloud.firestore {
       
       // Crear: empleados y admins pueden crear reportes
       // Validar que el uid coincida con el usuario autenticado
+      // El campo tipoItem es opcional (por defecto 'juego' para reportes antiguos)
       allow create: if isEmployeeOrAdmin() && 
                        request.resource.data.uid == request.auth.uid &&
                        request.resource.data.keys().hasAll([
@@ -167,7 +168,10 @@ service cloud.firestore {
                          'juegoNombre', 'juegoId', 'plataforma',
                          'correoUtilizado', 'codigosUsados',
                          'plataformaMensaje', 'fechaGeneracion', 'createdAt'
-                       ]);
+                       ]) &&
+                       // Validar tipoItem si está presente
+                       (!('tipoItem' in request.resource.data) || 
+                        request.resource.data.tipoItem in ['juego', 'combo']);
       
       // Actualizar: nadie puede actualizar reportes (son inmutables)
       allow update: if false;

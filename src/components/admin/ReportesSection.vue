@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useReportes } from '@/composables/useReportes'
 import ReportesCharts from './ReportesCharts.vue'
-import { FileText, RefreshCw, Calendar } from 'lucide-vue-next'
+import { FileText, RefreshCw, Calendar, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-vue-next'
 
 const {
   reportes,
@@ -20,7 +20,11 @@ const fechaInicio = ref('')
 const fechaFin = ref('')
 const mostrarGraficos = ref(true)
 
-// Computed para reportes filtrados
+// Estados para ordenamiento
+const ordenarPor = ref<'fecha' | 'usuario' | 'juego' | 'rol'>('fecha')
+const ordenDireccion = ref<'asc' | 'desc'>('desc') // Por defecto descendente (más recientes primero)
+
+// Computed para reportes filtrados y ordenados
 const reportesFiltrados = computed(() => {
   let resultado = reportes.value
   
@@ -65,6 +69,28 @@ const reportesFiltrados = computed(() => {
       return fechaReporte <= fechaFinDate
     })
   }
+  
+  // Ordenar resultados
+  resultado = [...resultado].sort((a, b) => {
+    let comparacion = 0
+    
+    switch (ordenarPor.value) {
+      case 'fecha':
+        comparacion = new Date(a.fechaGeneracion).getTime() - new Date(b.fechaGeneracion).getTime()
+        break
+      case 'usuario':
+        comparacion = (a.nombreUsuario || a.email).localeCompare(b.nombreUsuario || b.email)
+        break
+      case 'juego':
+        comparacion = a.juegoNombre.localeCompare(b.juegoNombre)
+        break
+      case 'rol':
+        comparacion = a.rol.localeCompare(b.rol)
+        break
+    }
+    
+    return ordenDireccion.value === 'asc' ? comparacion : -comparacion
+  })
   
   return resultado
 })
@@ -112,6 +138,18 @@ const limpiarFiltrosReportes = (): void => {
   busquedaReporte.value = ''
   fechaInicio.value = ''
   fechaFin.value = ''
+}
+
+// Función para cambiar ordenamiento
+const cambiarOrdenamiento = (campo: 'fecha' | 'usuario' | 'juego' | 'rol'): void => {
+  if (ordenarPor.value === campo) {
+    // Si ya está ordenando por este campo, cambiar dirección
+    ordenDireccion.value = ordenDireccion.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    // Si es un campo nuevo, ordenar por él (descendente por defecto)
+    ordenarPor.value = campo
+    ordenDireccion.value = 'desc'
+  }
 }
 
 const aplicarFiltroRapido = (dias: number): void => {
@@ -305,6 +343,23 @@ defineExpose({
     <!-- Tabla de Reportes -->
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body">
+        <!-- Indicador de ordenamiento activo -->
+        <div v-if="!isLoadingReportes && reportesFiltrados.length > 0" class="alert alert-info mb-4 shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+          <div class="text-sm">
+            <span class="font-semibold">Ordenando por:</span> 
+            <span class="badge badge-primary ml-2">
+              {{ ordenarPor === 'fecha' ? 'Fecha' : ordenarPor === 'usuario' ? 'Usuario' : ordenarPor === 'juego' ? 'Juego' : 'Rol' }}
+            </span>
+            <span class="ml-2">
+              {{ ordenDireccion === 'desc' ? '(Mayor a menor)' : '(Menor a mayor)' }}
+            </span>
+          </div>
+          <span class="text-xs opacity-70 ml-2">Haz clic en cualquier columna para cambiar el ordenamiento</span>
+        </div>
+
         <div v-if="isLoadingReportes" class="flex justify-center p-8">
           <span class="loading loading-spinner loading-lg"></span>
         </div>
@@ -319,10 +374,54 @@ defineExpose({
             <thead>
               <tr>
                 <th>#</th>
-                <th>Fecha</th>
-                <th>Usuario</th>
-                <th>Rol</th>
-                <th>Juego</th>
+                <th>
+                  <button 
+                    @click="cambiarOrdenamiento('fecha')" 
+                    class="btn btn-ghost btn-sm gap-2 hover:bg-base-200"
+                    :class="ordenarPor === 'fecha' ? 'font-bold text-primary' : ''"
+                  >
+                    Fecha
+                    <ArrowDown v-if="ordenarPor === 'fecha' && ordenDireccion === 'desc'" :size="16" />
+                    <ArrowUp v-else-if="ordenarPor === 'fecha' && ordenDireccion === 'asc'" :size="16" />
+                    <ArrowUpDown v-else :size="16" class="opacity-30" />
+                  </button>
+                </th>
+                <th>
+                  <button 
+                    @click="cambiarOrdenamiento('usuario')" 
+                    class="btn btn-ghost btn-sm gap-2 hover:bg-base-200"
+                    :class="ordenarPor === 'usuario' ? 'font-bold text-primary' : ''"
+                  >
+                    Usuario
+                    <ArrowDown v-if="ordenarPor === 'usuario' && ordenDireccion === 'desc'" :size="16" />
+                    <ArrowUp v-else-if="ordenarPor === 'usuario' && ordenDireccion === 'asc'" :size="16" />
+                    <ArrowUpDown v-else :size="16" class="opacity-30" />
+                  </button>
+                </th>
+                <th>
+                  <button 
+                    @click="cambiarOrdenamiento('rol')" 
+                    class="btn btn-ghost btn-sm gap-2 hover:bg-base-200"
+                    :class="ordenarPor === 'rol' ? 'font-bold text-primary' : ''"
+                  >
+                    Rol
+                    <ArrowDown v-if="ordenarPor === 'rol' && ordenDireccion === 'desc'" :size="16" />
+                    <ArrowUp v-else-if="ordenarPor === 'rol' && ordenDireccion === 'asc'" :size="16" />
+                    <ArrowUpDown v-else :size="16" class="opacity-30" />
+                  </button>
+                </th>
+                <th>
+                  <button 
+                    @click="cambiarOrdenamiento('juego')" 
+                    class="btn btn-ghost btn-sm gap-2 hover:bg-base-200"
+                    :class="ordenarPor === 'juego' ? 'font-bold text-primary' : ''"
+                  >
+                    Juego
+                    <ArrowDown v-if="ordenarPor === 'juego' && ordenDireccion === 'desc'" :size="16" />
+                    <ArrowUp v-else-if="ordenarPor === 'juego' && ordenDireccion === 'asc'" :size="16" />
+                    <ArrowUpDown v-else :size="16" class="opacity-30" />
+                  </button>
+                </th>
                 <th>Correo</th>
                 <th>Plataforma</th>
                 <th>Códigos Usados</th>

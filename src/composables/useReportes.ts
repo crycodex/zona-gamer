@@ -34,7 +34,8 @@ export function useReportes() {
     plataformaMensaje: 'PS4' | 'PS5',
     clienteNombre?: string,
     clienteTelefono?: string,
-    tipoCuenta?: 'Principal PS4' | 'Secundaria PS4' | 'Principal PS5' | 'Secundaria PS5'
+    tipoCuenta?: 'Principal PS4' | 'Secundaria PS4' | 'Principal PS5' | 'Secundaria PS5',
+    tipoItem?: 'juego' | 'combo' // Nuevo parámetro opcional, por defecto 'juego' para compatibilidad
   ): Promise<void> => {
     try {
       const reportesRef = collection(db, 'reportes')
@@ -44,6 +45,7 @@ export function useReportes() {
         email,
         nombreUsuario: nombreUsuario || email || 'Usuario',
         rol,
+        tipoItem: tipoItem || 'juego', // Por defecto 'juego' para mantener compatibilidad
         juegoNombre,
         juegoId,
         plataforma,
@@ -59,6 +61,8 @@ export function useReportes() {
 
       await addDoc(reportesRef, nuevoReporte)
       console.log('✅ Reporte creado exitosamente', {
+        tipo: tipoItem || 'juego',
+        item: juegoNombre,
         clienteNombre: clienteNombre || 'No asignado',
         clienteTelefono: clienteTelefono || 'No asignado',
         tipoCuenta: tipoCuenta || 'No asignado'
@@ -118,6 +122,10 @@ export function useReportes() {
       else if (filtros?.rol) {
         q = query(reportesRef, where('rol', '==', filtros.rol), orderBy('fechaGeneracion', 'desc'), firestoreLimit(limite))
       }
+      // Aplicar filtro de tipoItem si existe (solo si no hay filtro de uid o rol)
+      else if (filtros?.tipoItem) {
+        q = query(reportesRef, where('tipoItem', '==', filtros.tipoItem), orderBy('fechaGeneracion', 'desc'), firestoreLimit(limite))
+      }
 
       const querySnapshot = await getDocs(q)
       
@@ -129,6 +137,7 @@ export function useReportes() {
           email: data.email,
           nombreUsuario: data.nombreUsuario,
           rol: data.rol,
+          tipoItem: data.tipoItem || 'juego', // Por defecto 'juego' para reportes antiguos
           juegoNombre: data.juegoNombre,
           juegoId: data.juegoId,
           plataforma: data.plataforma,
@@ -159,6 +168,12 @@ export function useReportes() {
       if (filtros?.plataforma) {
         reportesTemp = reportesTemp.filter(
           r => r.plataforma === filtros.plataforma
+        )
+      }
+
+      if (filtros?.tipoItem) {
+        reportesTemp = reportesTemp.filter(
+          r => r.tipoItem === filtros.tipoItem
         )
       }
 
