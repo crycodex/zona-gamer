@@ -8,8 +8,6 @@ import LoginView from '@/views/auth/LoginView.vue'
 import AdminDashboard from '@/views/admin/AdminDashboard.vue'
 import EmployeeDashboard from '@/views/employee/EmployeeDashboard.vue'
 import NotFoundView from '@/views/front/NotFoundView.vue'
-import PromotionsView from '@/views/front/PromotionsView.vue'
-import CombosView from '@/views/front/CombosView.vue'
 import OffersView from '@/views/front/OffersView.vue'
 import AllGamesView from '@/views/front/AllGamesView.vue'
 
@@ -28,28 +26,7 @@ const router = createRouter({
         robots: 'index, follow'
       },
     },
-    {
-      path: '/promociones',
-      name: 'promotions',
-      component: PromotionsView,
-      meta: {
-        requiresAuth: false,
-        title: 'Promociones - Zona Gamer',
-        description: 'Descubre las mejores promociones en juegos digitales para PS4 y PS5.',
-        robots: 'index, follow'
-      }
-    },
-    {
-      path: '/combos',
-      name: 'combos',
-      component: CombosView,
-      meta: {
-        requiresAuth: false,
-        title: 'Combos de Ahorro - Zona Gamer',
-        description: 'Ahorra con nuestros combos de juegos digitales para PS4 y PS5.',
-        robots: 'index, follow'
-      }
-    },
+    // Rutas eliminadas: /promociones y /combos
     {
       path: '/ofertas',
       name: 'offers',
