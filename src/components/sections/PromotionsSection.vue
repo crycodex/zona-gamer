@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { GameSummary } from '@/types/game'
-import { Star, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-vue-next'
+import {ChevronLeft, ChevronRight, ArrowRight } from 'lucide-vue-next'
 import GameCard from '@/components/ui/GameCard.vue'
 
 interface Props {

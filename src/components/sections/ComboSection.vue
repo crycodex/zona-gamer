@@ -5,7 +5,7 @@ import { useCombos } from '@/composables/useCombos'
 import { useCartStore } from '@/stores/cart'
 import type { ComboSummary } from '@/types/combo'
 import type { GameSummary } from '@/types/game'
-import { Package, Sparkles, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-vue-next'
+import { Package, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-vue-next'
 
 const { combos, isLoadingCombos } = useCombos()
 const cartStore = useCartStore()
