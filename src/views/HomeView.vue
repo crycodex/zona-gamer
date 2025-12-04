@@ -7,6 +7,7 @@ import { generarStructuredData, eliminarStructuredData } from '@/composables/use
 import type { GamePlatform } from '@/types/game'
 import AppNavbar from '@/components/ui/AppNavbar.vue'
 import CartModal from '@/components/ui/CartModal.vue'
+import HeroSection from '@/components/sections/HeroSection.vue'
 import OffersSection from '@/components/sections/OffersSection.vue'
 import PromotionsSection from '@/components/sections/PromotionsSection.vue'
 import TrendingGamesSection from '@/components/sections/TrendingGamesSection.vue'
@@ -247,27 +248,29 @@ onBeforeUnmount(() => {
       @platform-change="handlePlataformaChange"
     />
 
-    <!-- Contenido Principal -->
-    <div class="container mx-auto px-4 md:px-6 pt-28 pb-12 relative overflow-x-hidden">
-      <!-- Efectos de fondo decorativos -->
-      <div class="absolute top-1/4 left-0 w-64 h-64 bg-error/5 rounded-full blur-3xl pointer-events-none"></div>
-      <div class="absolute bottom-1/4 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
-
-      <!-- Loading mejorado -->
-      <div v-if="isLoadingGames || isLoadingCombos" class="flex justify-center items-center min-h-[400px]">
-        <div class="text-center space-y-6 animate-fadeInUp">
-          <div class="relative">
-            <span class="loading loading-spinner loading-lg text-error"></span>
-            <div class="absolute inset-0 loading loading-spinner loading-lg text-error opacity-50 scale-150"></div>
-          </div>
-          <div>
-            <p class="text-2xl font-bold text-gradient-animated mb-2">Cargando contenido...</p>
-            <p class="text-sm text-base-content/60">Preparando la mejor experiencia</p>
-          </div>
+    <!-- Loading mejorado -->
+    <div v-if="isLoadingGames || isLoadingCombos" class="flex justify-center items-center min-h-screen pt-28">
+      <div class="text-center space-y-6 animate-fadeInUp">
+        <div class="relative">
+          <span class="loading loading-spinner loading-lg text-error"></span>
+          <div class="absolute inset-0 loading loading-spinner loading-lg text-error opacity-50 scale-150"></div>
+        </div>
+        <div>
+          <p class="text-2xl font-bold text-gradient-animated mb-2">Cargando contenido...</p>
+          <p class="text-sm text-base-content/60">Preparando la mejor experiencia</p>
         </div>
       </div>
+    </div>
 
-      <template v-else>
+    <template v-else>
+      <!-- Hero Section -->
+      <HeroSection :games="juegosFiltradosPorPlataforma" />
+
+      <!-- Contenido Principal -->
+      <div class="container mx-auto px-4 md:px-6 py-12 relative overflow-x-hidden">
+        <!-- Efectos de fondo decorativos -->
+        <div class="absolute top-1/4 left-0 w-64 h-64 bg-error/5 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-1/4 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
         <!-- Indicador de filtros activos -->
         <div v-if="searchTerm || filtroPlataforma !== 'PS4 & PS5'" class="mb-8 animate-fadeInUp">
           <div class="flex flex-wrap items-center gap-3">
@@ -430,22 +433,22 @@ onBeforeUnmount(() => {
           </div>
 
         </template>
-      </template>
-    </div>
+      </div>
 
-    <!-- Sección de Reseñas -->
-    <ReviewsSection />
+      <!-- Sección de Reseñas -->
+      <ReviewsSection />
 
-    <!-- Preguntas Frecuentes -->
-    <FAQSection />
+      <!-- Preguntas Frecuentes -->
+      <FAQSection />
 
-    <!-- Contacto y Ubicación -->
-    <ContactLocationSection />
+      <!-- Contacto y Ubicación -->
+      <ContactLocationSection />
 
-    <!-- Footer -->
-    <div class="relative z-50">
-      <AppFooter />
-    </div>
+      <!-- Footer -->
+      <div class="relative z-50">
+        <AppFooter />
+      </div>
+    </template>
 
     <!-- Modal del Carrito -->
     <CartModal 
