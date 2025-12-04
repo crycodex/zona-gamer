@@ -239,7 +239,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-linear-gradient(to bottom, #1a1a1a, #2a2a2a, #3a3a3a, #4a4a4a, #5a5a5a, #6a6a6a, #7a7a7a, #8a8a8a, #9a9a9a, #aaaaaa, #bababa, #cacaca)">
+  <div class="min-h-screen bg-linear-gradient(to bottom, #1a1a1a, #2a2a2a, #3a3a3a, #4a4a4a, #5a5a5a, #6a6a6a, #7a7a7a, #8a8a8a, #9a9a9a, #aaaaaa, #bababa, #cacaca) overflow-x-hidden">
     <!-- Navbar -->
     <AppNavbar 
       @open-cart="handleOpenCart" 
@@ -248,7 +248,7 @@ onBeforeUnmount(() => {
     />
 
     <!-- Contenido Principal -->
-    <div class="container mx-auto px-4 md:px-6 py-12 relative">
+    <div class="container mx-auto px-4 md:px-6 py-12 relative overflow-x-hidden">
       <!-- Efectos de fondo decorativos -->
       <div class="absolute top-1/4 left-0 w-64 h-64 bg-error/5 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute bottom-1/4 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>

@@ -156,9 +156,9 @@ const handleVerMas = () => {
       </div>
 
       <!-- Carrusel de Combos -->
-      <div v-else-if="displayedCombos.length > 0" class="relative">
+      <div v-else-if="displayedCombos.length > 0" class="relative overflow-hidden">
         <!-- Controles de navegación -->
-        <div v-if="displayedCombos.length > itemsPerView" class="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between items-center pointer-events-none z-10 -mx-4">
+        <div v-if="displayedCombos.length > itemsPerView" class="absolute top-1/2 -translate-y-1/2 left-2 right-2 flex justify-between items-center pointer-events-none z-10">
           <button 
             @click="scrollLeft"
             :disabled="!canGoLeft"
