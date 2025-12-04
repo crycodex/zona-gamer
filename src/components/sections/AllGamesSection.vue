@@ -42,49 +42,6 @@ const handleVerTodos = () => {
 }
 </script>
 
-<template>
-  <div>
-    <!-- Header del catálogo -->
-    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-fadeInUp">
-      <div>
-        <h2 class="text-4xl font-black text-gradient mb-2">Catálogo Completo</h2>
-        <p class="text-base-content/60">Explora nuestro catálogo completo de {{ games.length }} juegos</p>
-      </div>
-      <div class="flex items-center gap-4">
-
-        <button 
-          @click="handleVerTodos"
-          class="btn btn-error btn-outline gap-2"
-        >
-          <span>Ver Catálogo Completo</span>
-          <ArrowRight :size="20" />
-        </button>
-      </div>
-    </div>
-
-    <!-- Grid de Todos los Juegos -->
-    <div id="catalogo-completo">
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4 mb-8">
-        <GameCard
-          v-for="juego in paginatedGames"
-          :key="juego.id"
-          :game="juego"
-        />
-      </div>
-      
-      <!-- Paginación -->
-      <div class="mb-16">
-        <Pagination 
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          @page-change="(page) => emit('page-change', page)"
-          @next="emit('next')"
-          @prev="emit('prev')"
-        />
-      </div>
-    </div>
-  </div>
-</template>
 
 <style scoped>
 .text-gradient {

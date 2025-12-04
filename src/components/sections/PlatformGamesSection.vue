@@ -113,17 +113,6 @@ const handlePrevPage = () => {
           @prev="handlePrevPage"
         />
       </div>
-
-      <!-- Botón para ir a vista con filtros -->
-      <div v-if="games.length > 6" class="flex justify-center mt-10">
-        <button 
-          @click="handleVerTodos"
-          class="btn btn-error btn-outline gap-2"
-        >
-          <span>Ver Todos los Juegos {{ platformName }}</span>
-          <ArrowRight :size="24" />
-        </button>
-      </div>
     </div>
     
     <div v-else class="text-center py-12">
