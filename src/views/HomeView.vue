@@ -253,7 +253,6 @@ onBeforeUnmount(() => {
       <div class="text-center space-y-6 animate-fadeInUp">
         <div class="relative">
           <span class="loading loading-spinner loading-lg text-error"></span>
-          <div class="absolute inset-0 loading loading-spinner loading-lg text-error opacity-50 scale-150"></div>
         </div>
         <div>
           <p class="text-2xl font-bold text-gradient-animated mb-2">Cargando contenido...</p>
