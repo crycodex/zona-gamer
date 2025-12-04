@@ -18,7 +18,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const router = useRouter()
 const currentIndex = ref(0)
-const maxItems = 10
+const maxItems = 5
 
 const hasGames = computed(() => props.games.length > 0)
 

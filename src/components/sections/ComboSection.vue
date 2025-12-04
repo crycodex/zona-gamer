@@ -11,7 +11,7 @@ const { combos, isLoadingCombos } = useCombos()
 const cartStore = useCartStore()
 const router = useRouter()
 const currentIndex = ref(0)
-const maxItems = 10
+const maxItems = 5
 
 // Mostrar solo los combos activos y que tengan correos
 const combosDisponibles = computed(() => {
