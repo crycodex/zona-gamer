@@ -79,7 +79,7 @@ import logo from '/Images/logo/logo.png'
   <!-- Copyright mejorado -->
   <div class="bg-base-100 text-base-content text-center py-6 border-t border-white/10">
     <p class="text-sm font-semibold">
-      © 2024 <span class="text-gradient">Zona Gamers Ecuador</span> - Todos los derechos reservados
+      © 2025 <span class="text-gradient">Zona Gamers Ecuador</span> - Todos los derechos reservados
     </p>
     <p class="text-xs text-base-content/60 mt-2">
       Hecho con ❤️ para los gamers ecuatorianos

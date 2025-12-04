@@ -161,7 +161,7 @@ onUnmounted(() => {
           <div class="flex flex-col sm:flex-row gap-4">
             <button 
               @click="handleWhatsApp"
-              class="btn btn-error btn-lg gap-3 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              class="btn btn-success btn-lg gap-3 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
             >
               <MessageCircle :size="24" />
               <span>Contactar por WhatsApp</span>

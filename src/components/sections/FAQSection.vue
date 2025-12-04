@@ -86,7 +86,7 @@ const toggleItem = (id: string): void => {
             <span class="text-lg font-semibold text-white flex-1">{{ faq.question }}</span>
             <ChevronDown
               :size="24"
-              class="text-base-content/60 flex-shrink-0 transition-transform duration-300"
+              class="text-base-content/60 shrink-0 transition-transform duration-300"
               :class="{ 'rotate-180': openItems.has(faq.id) }"
             />
           </button>
@@ -101,15 +101,6 @@ const toggleItem = (id: string): void => {
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Contacto adicional -->
-      <div class="text-center mt-12">
-        <p class="text-base-content/70 mb-4">¿No encuentras la respuesta que buscas?</p>
-        <button class="btn btn-error btn-outline gap-2">
-          <MessageCircle :size="20" />
-          Contactar Soporte
-        </button>
       </div>
     </div>
   </div>

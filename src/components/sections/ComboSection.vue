@@ -190,12 +190,12 @@ const handleVerMas = () => {
             <div
               v-for="combo in displayedCombos"
               :key="combo.id"
-              class="flex-shrink-0"
+              class="shrink-0"
               :style="{ width: `calc(${100 / itemsPerView}% - ${(itemsPerView - 1) * 24 / itemsPerView}px)` }"
             >
               <div class="card bg-base-100 shadow-xl hover:shadow-2xl border border-white/10 overflow-hidden group transition-all duration-300 hover:scale-[1.02] h-full flex flex-col">
                 <!-- Imagen del combo -->
-                <figure class="relative h-48 bg-gradient-to-br from-error/20 via-primary/20 to-warning/20 overflow-hidden">
+                <figure class="relative h-48 bg-linear-gradient(to bottom, #ef4444/20, #9333ea/20, #f59e0b/20) overflow-hidden">
                   <img 
                     v-if="combo.foto" 
                     :src="combo.foto" 
@@ -216,11 +216,11 @@ const handleVerMas = () => {
                   
                   
                   <!-- Overlay con gradiente -->
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+                  <div class="absolute inset-0 bg-linear-gradient(to top, #1a1a1a/80, #1a1a1a/40, transparent)"></div>
                 </figure>
 
                 <!-- Contenido del combo -->
-                <div class="card-body p-6 flex-grow flex flex-col">
+                <div class="card-body p-6 grow-0 flex flex-col">
                   <h3 class="card-title text-xl font-bold mb-3 line-clamp-2">
                     {{ combo.nombre }}
                   </h3>
@@ -237,7 +237,7 @@ const handleVerMas = () => {
                   </div>
 
                   <!-- Juegos incluidos -->
-                  <div class="mb-4 pt-4 border-t border-white/10 flex-grow">
+                  <div class="mb-4 pt-4 border-t border-white/10 grow-0">
                     <div class="mb-3">
                       <h4 class="font-bold text-sm text-base-content/80 mb-2 flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -253,7 +253,7 @@ const handleVerMas = () => {
                         :key="index"
                         class="flex items-center gap-2 bg-base-200 px-3 py-2 rounded-lg text-sm"
                       >
-                        <div class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-error"></div>
+                        <div class="shrink-0 w-1.5 h-1.5 rounded-full bg-error"></div>
                         <span class="flex-1 line-clamp-1">{{ juego.nombre }}</span>
                         <span 
                           v-if="juego.tipo === 'catalogo'" 
