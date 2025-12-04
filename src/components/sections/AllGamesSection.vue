@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { ArrowRight } from 'lucide-vue-next'
 import GameCard from '@/components/ui/GameCard.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import type { GameSummary } from '@/types/game'
@@ -18,6 +20,7 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const router = useRouter()
 
 const paginatedGames = computed(() => {
   const start = (props.currentPage - 1) * props.itemsPerPage
@@ -28,6 +31,15 @@ const paginatedGames = computed(() => {
 const totalPages = computed(() => {
   return Math.ceil(props.games.length / props.itemsPerPage)
 })
+
+const handleVerTodos = () => {
+  router.push({ 
+    name: 'VerMas', 
+    query: { 
+      tipo: 'juegos'
+    } 
+  })
+}
 </script>
 
 <template>
@@ -35,15 +47,17 @@ const totalPages = computed(() => {
     <!-- Header del catálogo -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 animate-fadeInUp">
       <div>
-        <h2 class="text-4xl font-black text-gradient mb-2">Todos los Juegos</h2>
+        <h2 class="text-4xl font-black text-gradient mb-2">Catálogo Completo</h2>
         <p class="text-base-content/60">Explora nuestro catálogo completo de {{ games.length }} juegos</p>
       </div>
-      <div class="stats shadow-glow glass-effect border border-white/10">
-        <div class="stat py-4 px-8">
-          <div class="stat-title text-xs font-semibold">Total de Juegos</div>
-          <div class="stat-value text-error text-3xl font-black">{{ games.length }}</div>
-          <div class="stat-desc text-xs">Disponibles ahora</div>
-        </div>
+      <div class="flex items-center gap-4">
+
+        <button 
+          @click="handleVerTodos"
+          class="btn btn-outline btn-error gap-2"
+        >
+          Ver Catálogo Completo
+        </button>
       </div>
     </div>
 
@@ -71,3 +85,32 @@ const totalPages = computed(() => {
   </div>
 </template>
 
+<style scoped>
+.text-gradient {
+  background: linear-gradient(90deg, #ff6b6b, #feca57);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+</style>

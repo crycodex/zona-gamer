@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { Gamepad2, Facebook, Instagram, Send } from 'lucide-vue-next'
+import { Facebook, Instagram, Send } from 'lucide-vue-next'
+import logo from '/Images/logo/logo.png'
 </script>
 
 <template>
   <!-- Footer con background personalizado -->
-  <footer class="relative bg-gradient-to-b from-base-300 to-base-200 text-base-content mt-20 overflow-hidden">
+  <footer class="relative bg-linear-to-b from-base-300 to-base-200 text-base-content mt-20 overflow-hidden">
     <!-- Efectos decorativos -->
     <div class="absolute top-0 left-0 w-full h-1 bg-gradient-error"></div>
     <div class="absolute top-0 left-1/4 w-64 h-64 bg-error/5 rounded-full blur-3xl"></div>
@@ -14,16 +15,8 @@ import { Gamepad2, Facebook, Instagram, Send } from 'lucide-vue-next'
       <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
         <!-- Logo y descripción -->
         <div class="flex flex-col gap-4 animate-fadeInUp">
-          <div class="relative group">
-            <Gamepad2 :size="56" class="text-error group-hover:scale-110 transition-transform duration-300" :stroke-width="2" />
-            <div class="absolute inset-0 blur-xl bg-error/30 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          </div>
-          <div>
-            <p class="font-black text-2xl text-gradient mb-2">Zona Gamers</p>
-            <p class="text-sm text-base-content/70">
-              Tu tienda de juegos digitales de confianza en Ecuador
-            </p>
-          </div>
+          <img :src="logo" alt="Zona Gamers" class="" />
+
         </div>
 
         <!-- Información -->

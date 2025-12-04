@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Gamepad2 } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Gamepad2, ArrowRight } from 'lucide-vue-next'
 import GameCard from '@/components/ui/GameCard.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 import type { GameSummary } from '@/types/game'
@@ -22,6 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<Emits>()
+const router = useRouter()
 
 const showAll = ref(false)
 const currentPage = ref(1)
@@ -40,6 +42,16 @@ const handleViewMore = () => {
   showAll.value = true
   currentPage.value = 1
   emit('view-more')
+}
+
+const handleVerTodos = () => {
+  router.push({ 
+    name: 'VerMas', 
+    query: { 
+      tipo: 'juegos',
+      plataforma: props.platformName
+    } 
+  })
 }
 
 const handlePageChange = (page: number) => {
@@ -61,14 +73,16 @@ const handlePrevPage = () => {
 
 <template>
   <div class="mb-16 animate-fadeInUp">
-    <div class="flex items-center gap-4 mb-8">
-      <div class="relative">
-        <Gamepad2 :size="48" class="text-error animate-float" :stroke-width="2" />
-        <div class="absolute inset-0 blur-xl bg-error/30"></div>
-      </div>
-      <div class="flex-1">
-        <h2 class="text-4xl font-black text-gradient-animated mb-1">{{ platformTitle }}</h2>
-        <p class="text-base-content/70 text-lg">{{ platformDescription }}</p>
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div class="flex items-center gap-4">
+        <div class="relative">
+          <Gamepad2 :size="48" class="text-error animate-float" :stroke-width="2" />
+          <div class="absolute inset-0 blur-xl bg-error/30"></div>
+        </div>
+        <div class="flex-1">
+          <h2 class="text-4xl font-black text-gradient-animated mb-1">{{ platformTitle }}</h2>
+          <p class="text-base-content/70 text-lg">{{ platformDescription }}</p>
+        </div>
       </div>
       <button 
         v-if="!showAll && games.length > 6"
@@ -76,9 +90,7 @@ const handlePrevPage = () => {
         class="btn btn-outline btn-error gap-2 hover:scale-105 transition-transform"
       >
         Ver Más
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-        </svg>
+        <ArrowRight :size="20" />
       </button>
     </div>
     
@@ -92,7 +104,7 @@ const handlePrevPage = () => {
       </div>
       
       <!-- Paginación (solo cuando está expandido) -->
-      <div v-if="showAll">
+      <div v-if="showAll && totalPages > 1" class="mb-8">
         <Pagination 
           :current-page="currentPage"
           :total-pages="totalPages"
@@ -100,6 +112,17 @@ const handlePrevPage = () => {
           @next="handleNextPage"
           @prev="handlePrevPage"
         />
+      </div>
+
+      <!-- Botón para ir a vista con filtros -->
+      <div v-if="games.length > 6" class="flex justify-center mt-8">
+        <button 
+          @click="handleVerTodos"
+          class="btn btn-lg bg-gradient-to-r from-primary to-purple-600 hover:from-purple-600 hover:to-primary text-white border-none shadow-xl hover:shadow-2xl gap-3 group"
+        >
+          <span class="text-lg font-bold">Ver Todos los Juegos {{ platformName }}</span>
+          <ArrowRight :size="24" class="group-hover:translate-x-1 transition-transform duration-300" />
+        </button>
       </div>
     </div>
     
@@ -109,3 +132,50 @@ const handlePrevPage = () => {
   </div>
 </template>
 
+<style scoped>
+.text-gradient-animated {
+  background: linear-gradient(90deg, #ff6b6b, #feca57, #ff6b6b);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 3s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>

@@ -4,6 +4,7 @@ import { onAuthStateChanged } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '@/config/firebase'
 import HomeView from '@/views/HomeView.vue'
+import VerMasView from '@/views/VerMasView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
 import AdminDashboard from '@/views/admin/AdminDashboard.vue'
 import EmployeeDashboard from '@/views/employee/EmployeeDashboard.vue'
@@ -21,6 +22,18 @@ const router = createRouter({
         title: 'Zona Gamer - Juegos PS4 y PS5 Digital | Los Mejores Precios de Ecuador',
         description: 'Compra juegos digitales para PS4 y PS5 en Ecuador. Ofertas exclusivas, entrega inmediata y los mejores precios. Catálogo completo de juegos, DLCs y más.',
         keywords: 'juegos ps4, juegos ps5, juegos digitales, playstation, ecuador, ofertas, precios bajos, zona gamer, ps4 digital, ps5 digital',
+        robots: 'index, follow'
+      },
+    },
+    {
+      path: '/ver-mas',
+      name: 'VerMas',
+      component: VerMasView,
+      meta: { 
+        requiresAuth: false,
+        title: 'Catálogo Completo - Zona Gamer | Juegos PS4 y PS5',
+        description: 'Explora nuestro catálogo completo de juegos digitales para PS4 y PS5. Filtra por precio, plataforma y encuentra las mejores ofertas.',
+        keywords: 'catalogo juegos, juegos ps4, juegos ps5, ofertas, promociones, combos, zona gamer',
         robots: 'index, follow'
       },
     },

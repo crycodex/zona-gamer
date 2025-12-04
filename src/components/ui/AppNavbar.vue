@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useRoles } from '@/composables/useRoles'
 import { useCartStore } from '@/stores/cart'
-import { Search, ShoppingCart, User, Send, Gamepad2, LayoutDashboard, Menu, X, Trash2, Plus, Minus } from 'lucide-vue-next'
+import { Search, ShoppingCart, User, Send, Gamepad2, LayoutDashboard, Menu, X, Trash2, Plus, Minus, BookOpen } from 'lucide-vue-next'
 import type { GamePlatform } from '@/types/game'
 import logo from '/Images/logo/logo.png'
 
@@ -240,6 +240,12 @@ const handlePlatformChange = (platform: GamePlatform): void => {
   isMobileMenuOpen.value = false
 }
 
+const irAlCatalogo = (): void => {
+  router.push('/ver-mas')
+  // Cerrar menú móvil
+  isMobileMenuOpen.value = false
+}
+
 const toggleMobileMenu = (): void => {
   isMobileMenuOpen.value = !isMobileMenuOpen.value
 }
@@ -346,6 +352,18 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
               </button>
             </div>
 
+            <!-- Separador vertical -->
+            <div class="h-8 w-px bg-white/20"></div>
+
+            <!-- Botón Catálogo -->
+            <button
+              @click="irAlCatalogo"
+              class="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 text-sm bg-gradient-to-r from-primary to-purple-600 hover:from-purple-600 hover:to-primary text-white border border-primary/50 shadow-lg"
+            >
+              <BookOpen :size="18" class="shrink-0" />
+              <span>Catálogo</span>
+            </button>
+
             <!-- Buscador Expandible -->
             <div class="relative">
               <!-- Botón de búsqueda (ícono) -->
@@ -373,17 +391,9 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                   autofocus
                 />
                 <button 
-                  v-if="searchQuery"
-                  @click="clearSearch"
-                  class="absolute right-9 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-6 h-6 min-h-0"
-                  title="Limpiar búsqueda"
-                >
-                  <X :size="14" />
-                </button>
-                <button 
-                  @click="toggleSearch"
+                  @click="searchQuery ? clearSearch() : toggleSearch()"
                   class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-7 h-7 min-h-0"
-                  title="Cerrar búsqueda"
+                  :title="searchQuery ? 'Limpiar búsqueda' : 'Cerrar búsqueda'"
                 >
                   <X :size="16" />
                 </button>
@@ -607,19 +617,20 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                 v-model="searchQuery"
                 type="text"
                 placeholder="Buscar juegos..."
-                class="input w-full bg-gradient-to-r from-error/90 to-error/70 border-none text-white placeholder:text-orange-100/90 pl-4 pr-20 rounded-full shadow-lg text-sm"
+                class="input w-full bg-gradient-to-r from-error/90 to-error/70 border-none text-white placeholder:text-orange-100/90 pl-4 pr-12 rounded-full shadow-lg text-sm"
                 @input="handleSearchInput"
                 @keyup.enter="handleSearch"
               />
               <button 
                 v-if="searchQuery"
                 @click="clearSearch"
-                class="absolute right-10 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
+                class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
                 title="Limpiar"
               >
-                <X :size="14" />
+                <X :size="16" />
               </button>
               <button 
+                v-else
                 @click="handleSearch"
                 class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
                 title="Buscar"
@@ -644,6 +655,17 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
             >
               <Gamepad2 :size="16" class="shrink-0" />
               <span>{{ platform.label }}</span>
+            </button>
+          </div>
+
+          <!-- Botón Catálogo Móvil -->
+          <div class="mb-4">
+            <button
+              @click="irAlCatalogo"
+              class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all duration-300 text-base bg-gradient-to-r from-primary to-purple-600 hover:from-purple-600 hover:to-primary text-white border border-primary/50 shadow-lg"
+            >
+              <BookOpen :size="20" class="shrink-0" />
+              <span>Explorar Catálogo Completo</span>
             </button>
           </div>
         </div>

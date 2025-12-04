@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import type { GameSummary } from '@/types/game'
-import { Star } from 'lucide-vue-next'
+import { Star, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-vue-next'
 import GameCard from '@/components/ui/GameCard.vue'
 
 interface Props {
@@ -15,7 +16,54 @@ const props = withDefaults(defineProps<Props>(), {
   subtitle: 'Los mejores juegos en promoción'
 })
 
+const router = useRouter()
+const currentIndex = ref(0)
+const maxItems = 10
+
 const hasGames = computed(() => props.games.length > 0)
+
+// Mostrar solo los primeros 10 juegos
+const displayedGames = computed(() => props.games.slice(0, maxItems))
+const hasMoreGames = computed(() => props.games.length > maxItems)
+
+// Cantidad de items a mostrar en el carrusel
+const itemsPerView = computed(() => {
+  if (typeof window !== 'undefined') {
+    if (window.innerWidth >= 1536) return 6 // 2xl
+    if (window.innerWidth >= 1280) return 5 // xl
+    if (window.innerWidth >= 1024) return 4 // lg
+    if (window.innerWidth >= 768) return 3 // md
+    if (window.innerWidth >= 640) return 2 // sm
+  }
+  return 2 // default
+})
+
+const maxIndex = computed(() => Math.max(0, displayedGames.value.length - itemsPerView.value))
+
+const canGoLeft = computed(() => currentIndex.value > 0)
+const canGoRight = computed(() => currentIndex.value < maxIndex.value)
+
+const scrollLeft = () => {
+  if (canGoLeft.value) {
+    currentIndex.value = Math.max(0, currentIndex.value - 1)
+  }
+}
+
+const scrollRight = () => {
+  if (canGoRight.value) {
+    currentIndex.value = Math.min(maxIndex.value, currentIndex.value + 1)
+  }
+}
+
+const handleVerMas = () => {
+  router.push({ 
+    name: 'VerMas', 
+    query: { 
+      tipo: 'promociones',
+      categoria: props.title 
+    } 
+  })
+}
 </script>
 
 <template>
@@ -46,14 +94,75 @@ const hasGames = computed(() => props.games.length > 0)
         </div>
       </div>
 
-      <!-- Grid de juegos en fila horizontal -->
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        <GameCard
-          v-for="game in games"
-          :key="game.id"
-          :game="game"
-          :show-add-to-cart="true"
-        />
+      <!-- Carrusel Container -->
+      <div class="relative">
+        <!-- Controles de navegación -->
+        <div v-if="displayedGames.length > itemsPerView" class="absolute top-1/2 -translate-y-1/2 left-0 right-0 flex justify-between items-center pointer-events-none z-10 px-2">
+          <button 
+            @click="scrollLeft"
+            :disabled="!canGoLeft"
+            :class="[
+              'btn btn-circle bg-base-100/90 hover:bg-base-100 border-white/20 shadow-xl pointer-events-auto transition-all duration-300',
+              canGoLeft ? 'opacity-100' : 'opacity-30'
+            ]"
+          >
+            <ChevronLeft :size="24" />
+          </button>
+          <button 
+            @click="scrollRight"
+            :disabled="!canGoRight"
+            :class="[
+              'btn btn-circle bg-base-100/90 hover:bg-base-100 border-white/20 shadow-xl pointer-events-auto transition-all duration-300',
+              canGoRight ? 'opacity-100' : 'opacity-30'
+            ]"
+          >
+            <ChevronRight :size="24" />
+          </button>
+        </div>
+
+        <!-- Carrusel de juegos -->
+        <div class="overflow-hidden">
+          <div 
+            class="flex transition-transform duration-500 ease-out gap-4"
+            :style="{ transform: `translateX(-${currentIndex * (100 / itemsPerView)}%)` }"
+          >
+            <div
+              v-for="game in displayedGames"
+              :key="game.id"
+              class="flex-shrink-0"
+              :style="{ width: `calc(${100 / itemsPerView}% - ${(itemsPerView - 1) * 16 / itemsPerView}px)` }"
+            >
+              <GameCard
+                :game="game"
+                :show-add-to-cart="true"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicadores de puntos -->
+        <div v-if="maxIndex > 0" class="flex justify-center gap-2 mt-6">
+          <button
+            v-for="i in (maxIndex + 1)"
+            :key="i"
+            @click="currentIndex = i - 1"
+            :class="[
+              'h-2 rounded-full transition-all duration-300',
+              currentIndex === i - 1 ? 'w-8 bg-warning' : 'w-2 bg-base-content/30 hover:bg-base-content/50'
+            ]"
+          />
+        </div>
+      </div>
+
+      <!-- Botón Ver Más (si hay más de 10 juegos) -->
+      <div v-if="hasMoreGames" class="mt-8 flex justify-center">
+        <button 
+          @click="handleVerMas"
+          class="btn btn-lg bg-gradient-to-r from-warning to-orange-600 hover:from-orange-500 hover:to-orange-700 text-white border-none shadow-xl hover:shadow-2xl gap-3 group"
+        >
+          <span class="text-lg font-bold">Ver Todas las Promociones</span>
+          <ArrowRight :size="24" class="group-hover:translate-x-1 transition-transform duration-300" />
+        </button>
       </div>
     </div>
   </section>
@@ -92,12 +201,4 @@ const hasGames = computed(() => props.games.length > 0)
     transform: translateY(0);
   }
 }
-
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 </style>
-
