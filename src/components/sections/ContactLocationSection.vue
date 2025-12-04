@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
 import { MapPin, Instagram, MessageCircle } from 'lucide-vue-next'
-import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
 
 const socialLinks = {
   threads: 'https://x.com/zonagamersec?t=P_mNPwPKWfYibsbTnGWlrw&s=09',
@@ -10,85 +7,16 @@ const socialLinks = {
   tiktok: 'https://www.tiktok.com/@zona.gamers.ecuad'
 }
 
-const locationLink = 'https://www.google.com/maps/place/Zona+Gamers+Ecuador/@0.350706,-78.1224294,16z/data=!4m10!1m2!2m1!1szona+gamers!3m6!1s0x91d59aa3d25cdce3:0x610fcd511e7ccd49!8m2!3d0.3489213!4d-78.1187615!15sCgt6b25hIGdhbWVyc1oNIgt6b25hIGdhbWVyc5IBEHZpZGVvX2dhbWVfc3RvcmWqAUMKDS9nLzExZjEwZ2Z4bWoQATIfEAEiG82cTG3s40qHiO7V6-OeMdzwKONrIdjvnqpnSDIPEAIiC3pvbmEgZ2FtZXJz4AEA!16s%2Fg%2F11f10gfxmj?hl=es&entry=ttu&g_ep=EgoyMDI1MTExMC4wIKXMDSoASAFQAw%3D%3D'
+const locationLink = 'https://www.google.com/maps/place/Zona+Gamers+Ecuador/@0.350706,-78.1224294,16z/data=!4m10!1m2!2m1!1szona+gamers!3m6!1s0x91d59aa3d25cdce3:0x610fcd511e7ccd49!8m2!3d0.3489213!4d-78.1187615!15sCgt6b25hIGdhbWVyc5IBEHZpZGVvX2dhbWVfc3RvcmWqAUMKDS9nLzExZjEwZ2Z4bWoQATIfEAEiG82cTG3s40qHiO7V6-OeMdzwKONrIdjvnqpnSDIPEAIiC3pvbmEgZ2FtZXJz4AEA!16s%2Fg%2F11f10gfxmj?hl=es&entry=ttu&g_ep=EgoyMDI1MTExMC4wIKXMDSoASAFQAw%3D%3D'
 
-// Coordenadas de Zona Gamers Ecuador
-const mapCenter: [number, number] = [0.3489213, -78.1187615]
-
-const mapContainer = ref<HTMLElement | null>(null)
-let map: L.Map | null = null
-
-onMounted(() => {
-  if (mapContainer.value) {
-    // Inicializar el mapa
-    map = L.map(mapContainer.value, {
-      center: mapCenter,
-      zoom: 16,
-      zoomControl: true
-    })
-
-    // Agregar capa de OpenStreetMap
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
-      maxZoom: 19
-    }).addTo(map)
-
-    // Agregar marcador personalizado
-    const icon = L.divIcon({
-      className: 'custom-marker',
-      html: `
-        <div style="
-          background-color: #dc2626;
-          width: 40px;
-          height: 40px;
-          border-radius: 50% 50% 50% 0;
-          transform: rotate(-45deg);
-          border: 3px solid white;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <div style="
-            transform: rotate(45deg);
-            color: white;
-            font-size: 20px;
-          ">📍</div>
-        </div>
-      `,
-      iconSize: [40, 40],
-      iconAnchor: [20, 40],
-      popupAnchor: [0, -40]
-    })
-
-    // Agregar marcador con popup
-    const marker = L.marker(mapCenter, { icon }).addTo(map)
-    marker.bindPopup(`
-      <div style="text-align: center; padding: 8px;">
-        <strong style="color: #dc2626; font-size: 16px;">Zona Gamers Ecuador</strong><br>
-        <span style="color: #666; font-size: 14px;">Simón Bolívar 615, Ibarra</span>
-      </div>
-    `).openPopup()
-
-    // Ajustar el mapa después de que se renderice
-    setTimeout(() => {
-      map?.invalidateSize()
-    }, 100)
-  }
-})
-
-onUnmounted(() => {
-  if (map) {
-    map.remove()
-    map = null
-  }
-})
+// URL del iframe de Google Maps
+const googleMapsEmbedUrl = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3989.2634456789123!2d-78.12074562395895!3d0.3489213!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x91d59aa3d25cdce3%3A0x610fcd511e7ccd49!2sZona%20Gamers%20Ecuador!5e0!3m2!1ses!2sec!4v1234567890123!5m2!1ses!2sec'
 </script>
 
 <template>
   <section class="relative py-16 bg-gradient-to-b from-base-200 via-base-300 to-base-200 overflow-hidden">
     <!-- Efectos decorativos -->
-    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-error"></div>
+    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-error via-orange-500 to-error"></div>
     <div class="absolute top-1/4 left-0 w-64 h-64 bg-error/5 rounded-full blur-3xl pointer-events-none"></div>
     <div class="absolute bottom-1/4 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -203,24 +131,27 @@ onUnmounted(() => {
               </div>
 
               <div class="relative group">
-                <!-- Mapa de Leaflet -->
-                <div 
-                  ref="mapContainer"
-                  class="aspect-video rounded-xl overflow-hidden border border-white/10 hover:border-error/50 transition-all duration-300"
-                  style="min-height: 300px; z-index: 1;"
-                ></div>
+                <!-- Google Maps Iframe -->
+                <div class="aspect-video rounded-xl overflow-hidden border border-white/10 group-hover:border-error/50 transition-all duration-300 shadow-lg">
+                  <iframe
+                    :src="googleMapsEmbedUrl"
+                    width="100%"
+                    height="100%"
+                    style="border:0; min-height: 300px;"
+                    allowfullscreen=""
+                    loading="lazy"
+                    referrerpolicy="no-referrer-when-downgrade"
+                    class="w-full h-full"
+                  ></iframe>
+                </div>
                 
-                <!-- Overlay con botón para Google Maps -->
+                <!-- Botón para abrir en Google Maps -->
                 <a
                   :href="locationLink"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10"
                 >
-                  <div class="flex items-center gap-2 px-4 py-2 bg-error rounded-lg shadow-lg hover:bg-error/90 transition-colors">
-                    <MapPin :size="18" class="text-white" />
-                    <span class="text-white font-semibold text-sm">Ver en Google Maps</span>
-                  </div>
                 </a>
               </div>
 
@@ -239,48 +170,84 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* Estilos para el mapa de Leaflet */
-:deep(.leaflet-container) {
-  background-color: #1a1a1a;
-  height: 100%;
-  width: 100%;
-  border-radius: 0.75rem;
+.text-gradient {
+  background: linear-gradient(90deg, #ff6b6b, #feca57);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-:deep(.leaflet-popup-content-wrapper) {
-  background-color: #1f2937;
-  color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+.text-gradient-animated {
+  background: linear-gradient(90deg, #ff6b6b, #feca57, #ff6b6b);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 3s ease infinite;
 }
 
-:deep(.leaflet-popup-tip) {
-  background-color: #1f2937;
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
 }
 
-:deep(.leaflet-control-zoom) {
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
-:deep(.leaflet-control-zoom a) {
-  background-color: #1f2937;
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
 }
 
-:deep(.leaflet-control-zoom a:hover) {
-  background-color: #dc2626;
-  border-color: #dc2626;
+.animate-fadeInLeft {
+  animation: fadeInLeft 0.6s ease-out;
 }
 
-:deep(.leaflet-tile-container img) {
-  filter: brightness(0.8) contrast(1.1);
+.animate-fadeInRight {
+  animation: fadeInRight 0.6s ease-out;
 }
 
-/* Asegurar que el contenedor del mapa tenga altura */
-.map-container {
-  min-height: 300px;
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Estilo para el iframe de Google Maps */
+iframe {
+  filter: brightness(0.9) contrast(1.1);
 }
 </style>
-

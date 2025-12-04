@@ -1,8 +1,4 @@
 @import "tailwindcss";
-@plugin "daisyui";
-
-/* Configuración del tema */
-@theme {
-  --color-error: #dc2626;
-  --color-primary: #3b82f6;
+@plugin "daisyui" {
+  themes: synthwave
 }

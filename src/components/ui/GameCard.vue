@@ -239,14 +239,22 @@ const getVersionDescription = (type: AccountType): string => {
           v-if="showAddToCart"
           @click="handleAddToCart"
           :class="[
-            'btn w-full font-bold text-sm h-11 border-none shadow-lg hover:shadow-xl transition-all duration-300',
+            'group relative w-full font-bold text-sm h-12 border-none shadow-lg hover:shadow-2xl transition-all duration-300 rounded-xl overflow-hidden flex items-center justify-center gap-2',
             isInCart 
-              ? 'bg-success hover:bg-success text-white' 
-              : 'bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black'
+              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white hover:scale-[1.02]' 
+              : 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 hover:from-yellow-500 hover:to-orange-600 text-black hover:scale-[1.02]'
           ]"
         >
-          <ShoppingCart :size="18" :stroke-width="2.5" />
-          <span>{{ isInCart ? 'Agregar otra' : 'Añadir al carrito' }}</span>
+          <!-- Efecto de brillo -->
+          <div 
+            :class="[
+              'absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-700',
+              isInCart ? 'via-white/20' : 'via-white/40'
+            ]"
+          ></div>
+          
+          <ShoppingCart :size="18" :stroke-width="2.5" class="relative z-10" />
+          <span class="relative z-10">{{ isInCart ? 'Agregar otra' : 'Añadir al carrito' }}</span>
         </button>
       </div>
     </div>

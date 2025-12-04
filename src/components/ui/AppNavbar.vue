@@ -332,47 +332,43 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
             />
           </a>
 
-          <!-- Centro: Filtros de Plataformas y Buscador (Desktop) -->
-          <div class="hidden lg:flex flex-1 items-center justify-center gap-4 animate-fadeInUp delay-100">
-            <!-- Filtros de Plataformas (PS4 y PS5) -->
-            <div class="flex items-center gap-2">
-              <button
-                v-for="platform in platforms"
-                :key="platform.id"
-                @click="handlePlatformChange(platform.id)"
-                :class="[
-                  'flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 text-sm',
-                  selectedPlatform === platform.id
-                    ? 'text-white bg-error/20 border border-error/50 shadow-glow'
-                    : 'text-base-content/70 hover:text-white hover:bg-white/5 border border-transparent'
-                ]"
+          <!-- Centro: Navegación y Buscador (Desktop) -->
+          <div class="hidden lg:flex flex-1 items-center justify-center gap-6 animate-fadeInUp delay-100">
+            <!-- Navegación Principal -->
+            <nav class="flex items-center gap-2">
+              <!-- Botón Inicio -->
+              <a
+                href="/"
+                class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-sm text-white hover:bg-white/10"
               >
-                <Gamepad2 :size="18" class="shrink-0" />
-                <span>{{ platform.label }}</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                <span>Inicio</span>
+              </a>
+
+              <!-- Botón Catálogo -->
+              <button
+                @click="irAlCatalogo"
+                class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold transition-all duration-300 hover:scale-105 text-sm bg-gradient-to-r from-error to-orange-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg hover:shadow-xl"
+              >
+                <BookOpen :size="20" class="shrink-0" />
+                <span>Catálogo</span>
               </button>
-            </div>
+            </nav>
 
             <!-- Separador vertical -->
             <div class="h-8 w-px bg-white/20"></div>
 
-            <!-- Botón Catálogo -->
-            <button
-              @click="irAlCatalogo"
-              class="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold transition-all duration-300 hover:scale-105 text-sm bg-gradient-to-r from-primary to-purple-600 hover:from-purple-600 hover:to-primary text-white border border-primary/50 shadow-lg"
-            >
-              <BookOpen :size="18" class="shrink-0" />
-              <span>Catálogo</span>
-            </button>
-
-            <!-- Buscador Expandible -->
+            <!-- Buscador -->
             <div class="relative">
               <!-- Botón de búsqueda (ícono) -->
               <button
                 v-if="!isSearchExpanded"
                 @click="toggleSearch"
-                class="btn btn-circle bg-gradient-to-r from-error to-error/80 hover:from-orange-600 hover:to-red-600 border-none shadow-lg text-white transition-all duration-300 hover:scale-110 w-10 h-10 sm:w-12 sm:h-12"
+                class="btn btn-circle bg-white/10 hover:bg-white/20 border border-white/20 text-white transition-all duration-300 hover:scale-110 w-11 h-11"
               >
-                <Search :size="18" />
+                <Search :size="20" />
               </button>
 
               <!-- Input expandido -->
@@ -380,11 +376,12 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                 v-else
                 class="relative flex items-center animate-scaleIn"
               >
+                <Search :size="18" class="absolute left-4 text-white/60" />
                 <input
                   v-model="searchQuery"
                   type="text"
-                  placeholder="Minecraft, RPG, multijugador..."
-                  class="input bg-gradient-to-r from-error to-error/80 border-none text-white placeholder:text-orange-100/90 pl-5 pr-11 rounded-full shadow-lg transition-all duration-300 w-64 lg:w-80 focus:outline-none focus:ring-2 focus:ring-orange-400/50 text-sm sm:text-base"
+                  placeholder="Buscar juegos, combos..."
+                  class="input bg-white/10 border border-white/20 text-white placeholder:text-white/50 pl-12 pr-12 rounded-xl shadow-lg transition-all duration-300 w-64 lg:w-96 focus:outline-none focus:ring-2 focus:ring-error/50 focus:bg-white/15 text-sm"
                   @input="handleSearchInput"
                   @keyup.enter="handleSearch"
                   @blur="handleSearchBlur"
@@ -392,10 +389,10 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                 />
                 <button 
                   @click="searchQuery ? clearSearch() : toggleSearch()"
-                  class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-7 h-7 min-h-0"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white transition-all duration-300 p-0 w-8 h-8 min-h-0"
                   :title="searchQuery ? 'Limpiar búsqueda' : 'Cerrar búsqueda'"
                 >
-                  <X :size="16" />
+                  <X :size="18" />
                 </button>
               </div>
             </div>
@@ -610,63 +607,51 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
           v-if="isMobileMenuOpen"
           class="lg:hidden border-t border-white/10 pt-4 pb-3 animate-fadeInDown"
         >
+          <!-- Navegación Móvil -->
+          <div class="space-y-2 mb-4">
+            <!-- Botón Inicio -->
+            <a
+              href="/"
+              class="flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-300 text-white hover:bg-white/10 w-full"
+              @click="closeMobileMenu"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span>Inicio</span>
+            </a>
+
+            <!-- Botón Catálogo -->
+            <button
+              @click="irAlCatalogo"
+              class="flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-300 bg-gradient-to-r from-error to-orange-600 hover:from-orange-600 hover:to-red-700 text-white shadow-lg w-full"
+            >
+              <BookOpen :size="24" class="shrink-0" />
+              <span>Explorar Catálogo</span>
+            </button>
+          </div>
+
           <!-- Buscador Móvil -->
           <div class="mb-4">
             <div class="relative">
+              <Search :size="18" class="absolute left-4 top-1/2 -translate-y-1/2 text-white/60" />
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="Buscar juegos..."
-                class="input w-full bg-gradient-to-r from-error/90 to-error/70 border-none text-white placeholder:text-orange-100/90 pl-4 pr-12 rounded-full shadow-lg text-sm"
+                placeholder="Buscar juegos, combos..."
+                class="input w-full bg-white/10 border border-white/20 text-white placeholder:text-white/50 pl-12 pr-12 rounded-xl shadow-lg text-sm"
                 @input="handleSearchInput"
                 @keyup.enter="handleSearch"
               />
               <button 
                 v-if="searchQuery"
                 @click="clearSearch"
-                class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
+                class="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
                 title="Limpiar"
               >
-                <X :size="16" />
-              </button>
-              <button 
-                v-else
-                @click="handleSearch"
-                class="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost btn-sm btn-circle hover:bg-white/20 text-white p-0 w-8 h-8 min-h-0"
-                title="Buscar"
-              >
-                <Search :size="16" />
+                <X :size="18" />
               </button>
             </div>
-          </div>
-
-          <!-- Filtros de Plataformas Móvil -->
-          <div class="flex flex-wrap items-center gap-2 mb-4">
-            <button
-              v-for="platform in platforms"
-              :key="platform.id"
-              @click="handlePlatformChange(platform.id)"
-              :class="[
-                'flex items-center gap-2 px-3 py-2 rounded-lg font-semibold transition-all duration-300 text-sm',
-                selectedPlatform === platform.id
-                  ? 'text-white bg-error/20 border border-error/50 shadow-glow'
-                  : 'text-base-content/70 hover:text-white hover:bg-white/5 border border-transparent'
-              ]"
-            >
-              <Gamepad2 :size="16" class="shrink-0" />
-              <span>{{ platform.label }}</span>
-            </button>
-          </div>
-
-          <!-- Botón Catálogo Móvil -->
-          <div class="mb-4">
-            <button
-              @click="irAlCatalogo"
-              class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-bold transition-all duration-300 text-base bg-gradient-to-r from-primary to-purple-600 hover:from-purple-600 hover:to-primary text-white border border-primary/50 shadow-lg"
-            >
-              <BookOpen :size="20" class="shrink-0" />
-              <span>Explorar Catálogo Completo</span>
-            </button>
           </div>
         </div>
       </div>

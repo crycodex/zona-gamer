@@ -115,13 +115,16 @@ const handlePrevPage = () => {
       </div>
 
       <!-- Botón para ir a vista con filtros -->
-      <div v-if="games.length > 6" class="flex justify-center mt-8">
+      <div v-if="games.length > 6" class="flex justify-center mt-10">
         <button 
           @click="handleVerTodos"
-          class="btn btn-lg bg-gradient-to-r from-primary to-purple-600 hover:from-purple-600 hover:to-primary text-white border-none shadow-xl hover:shadow-2xl gap-3 group"
+          class="group relative inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-bold text-white transition-all duration-300 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/50 overflow-hidden"
         >
-          <span class="text-lg font-bold">Ver Todos los Juegos {{ platformName }}</span>
-          <ArrowRight :size="24" class="group-hover:translate-x-1 transition-transform duration-300" />
+          <!-- Efecto de brillo animado -->
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+          
+          <span class="relative z-10">Ver Todos los Juegos {{ platformName }}</span>
+          <ArrowRight :size="24" class="relative z-10 group-hover:translate-x-2 transition-transform duration-300" />
         </button>
       </div>
     </div>
