@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { MessageCircle, Gamepad2, TrendingUp, Star } from 'lucide-vue-next'
+import { MessageCircle, Gamepad2, TrendingUp, Star, ShoppingCart } from 'lucide-vue-next'
+import { useCartStore } from '@/stores/cart'
 import type { GameSummary } from '@/types/game'
 
 interface Props {
@@ -8,6 +9,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const cartStore = useCartStore()
 
 const currentGameIndex = ref(0)
 const isAnimating = ref(false)
@@ -62,6 +64,12 @@ const handleExploreCatalog = () => {
   window.location.href = '/ver-mas'
 }
 
+const handleAddToCart = (game: GameSummary | undefined) => {
+  if (!game) return
+  
+  cartStore.addToCart(game, 1, 'Principal PS4')
+}
+
 onMounted(() => {
   // Auto-rotate cada 5 segundos
   intervalId = window.setInterval(() => {
@@ -77,12 +85,33 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="relative min-h-[calc(100vh-6rem)] flex items-center overflow-hidden bg-gradient-to-br from-base-300 via-base-200 to-base-300">
-    <!-- Efectos de fondo -->
+  <section class="relative h-screen flex items-center overflow-hidden bg-linear-gradient(to bottom, #1a1a1a, #2a2a2a)">
+    <!-- Fondo animado gamer -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
+      <!-- Gradientes de fondo -->
       <div class="absolute top-0 right-0 w-96 h-96 bg-error/10 rounded-full blur-3xl animate-pulse"></div>
       <div class="absolute bottom-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-r from-transparent via-error/5 to-transparent"></div>
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-linear-gradient(to right, transparent, #ef4444/5, transparent)"></div>
+      
+      <!-- Elementos gamer animados -->
+      <div class="absolute top-20 right-20 w-32 h-32 opacity-10 animate-float">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="text-error">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        </svg>
+      </div>
+      <div class="absolute bottom-32 right-40 w-24 h-24 opacity-10 animate-float-delayed">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="text-warning">
+          <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+        </svg>
+      </div>
+      <div class="absolute top-40 left-20 w-20 h-20 opacity-10 animate-spin-slow">
+        <svg viewBox="0 0 24 24" fill="currentColor" class="text-primary">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+        </svg>
+      </div>
+      
+      <!-- Grid pattern -->
+      <div class="absolute inset-0 opacity-5" style="background-image: linear-gradient(#ef4444 1px, transparent 1px), linear-gradient(90deg, #ef4444 1px, transparent 1px); background-size: 50px 50px;"></div>
     </div>
 
     <div class="container mx-auto px-4 md:px-6 relative z-10">
@@ -169,24 +198,33 @@ onUnmounted(() => {
                 </div>
 
                 <!-- Imagen -->
-                <div class="relative aspect-[3/4] overflow-hidden rounded-2xl">
+                <div class="relative aspect-3/4 overflow-hidden rounded-2xl">
                   <img 
                     v-if="currentGame?.foto"
                     :src="currentGame.foto" 
                     :alt="currentGame.nombre"
                     class="w-full h-full object-cover transform hover:scale-110 transition-transform duration-700"
                   />
-                  <div class="absolute inset-0 bg-gradient-to-t from-base-300 via-transparent to-transparent"></div>
+                  <div class="absolute inset-0 bg-linear-gradient(to top, #1a1a1a, transparent)"></div>
                   
                   <!-- Información superpuesta -->
-                  <div class="absolute bottom-0 left-0 right-0 p-6 text-white">
+                  <div class="absolute bottom-0 left-0 right-0 p-6 text-white space-y-3">
                     <h3 class="text-2xl font-bold mb-2 line-clamp-2">{{ currentGame?.nombre }}</h3>
-                    <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2 mb-3">
                       <span class="badge badge-error">{{ currentGame?.version }}</span>
                       <span v-if="currentGame?.tipoPromocion && currentGame.tipoPromocion !== 'ninguna'" class="badge badge-warning">
                         {{ currentGame.tipoPromocion }}
                       </span>
                     </div>
+                    
+                    <!-- Botón agregar al carrito -->
+                    <button 
+                      @click="handleAddToCart(currentGame)"
+                      class="btn btn-error btn-block gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                    >
+                      <ShoppingCart :size="20" />
+                      <span>Agregar al Carrito</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -301,8 +339,51 @@ onUnmounted(() => {
 
 .line-clamp-2 {
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Animaciones para fondo gamer */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float 6s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+  50% {
+    transform: translateY(0) rotate(0deg);
+  }
+  75% {
+    transform: translateY(20px) rotate(-5deg);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.delay-1000 {
+  animation-delay: 1s;
 }
 </style>
