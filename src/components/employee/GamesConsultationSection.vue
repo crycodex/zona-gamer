@@ -152,24 +152,35 @@ const cerrarDetallesCorreo = (): void => {
 
 // WhatsApp
 const abrirModalWhatsApp = async (correo: GameEmailAccount, version?: 'PS4' | 'PS5'): Promise<void> => {
-  // Validar códigos disponibles
-  if (!validarCodigosDisponibles(correo)) {
-    alert('No hay suficientes códigos disponibles (se requieren al menos 2)')
+  // Validar que el correo exista y tenga datos básicos
+  if (!correo) {
+    alert('Error: No se ha seleccionado un correo válido')
     return
   }
 
-  // Validar que haya slots disponibles (no estén ocupados los 4 tipos de cuenta)
-  if (!validarSlotsDisponibles(correo)) {
-    alert('No se puede generar el mensaje: Ya están ocupados los 4 slots de cuenta (Principal PS4, Secundaria PS4, Principal PS5, Secundaria PS5)')
+  if (!correo.correo || correo.correo.trim() === '') {
+    alert('Error: El correo electrónico está vacío o es inválido')
     return
   }
 
-  // Validar información del usuario
+  // Validar información del juego
   if (!juegoSeleccionado.value) {
     alert('Error: No hay juego seleccionado')
     return
   }
 
+  if (!juegoSeleccionado.value.nombre || juegoSeleccionado.value.nombre.trim() === '') {
+    alert('Error: El nombre del juego está vacío o es inválido')
+    return
+  }
+
+  // Validar plataforma
+  if (!plataformaSeleccionada.value) {
+    alert('Error: No se ha seleccionado una plataforma válida')
+    return
+  }
+
+  // Validar información del usuario
   if (!currentUserData.value?.uid || !currentUserData.value?.email) {
     alert('Error: Información de usuario incompleta. Por favor, inicia sesión nuevamente.')
     return
@@ -178,6 +189,31 @@ const abrirModalWhatsApp = async (correo: GameEmailAccount, version?: 'PS4' | 'P
   // Validar que el correo tenga código master
   if (!correo.codigoMaster || correo.codigoMaster.trim() === '') {
     alert('Error: El correo no tiene contraseña (código master) configurada')
+    return
+  }
+
+  // Validar códigos disponibles
+  if (!validarCodigosDisponibles(correo)) {
+    alert('No hay suficientes códigos disponibles (se requieren al menos 2)')
+    return
+  }
+
+  // Validar que los códigos no estén vacíos
+  if (!correo.codigosGenerados || correo.codigosGenerados.length < 2) {
+    alert('Error: Los códigos de verificación están incompletos')
+    return
+  }
+
+  const codigo1 = correo.codigosGenerados[0]
+  const codigo2 = correo.codigosGenerados[1]
+  if (!codigo1 || codigo1.trim() === '' || !codigo2 || codigo2.trim() === '') {
+    alert('Error: Los códigos de verificación están vacíos o son inválidos')
+    return
+  }
+
+  // Validar que haya slots disponibles (no estén ocupados los 4 tipos de cuenta)
+  if (!validarSlotsDisponibles(correo)) {
+    alert('No se puede generar el mensaje: Ya están ocupados los 4 slots de cuenta (Principal PS4, Secundaria PS4, Principal PS5, Secundaria PS5)')
     return
   }
 
@@ -557,12 +593,11 @@ defineExpose({
               <div class="flex flex-col gap-2 items-end">
                 <div class="badge badge-lg">{{ correo.cuentas.length }} cuenta(s)</div>
                 <div class="badge" :class="validarCodigosDisponibles(correo) ? 'badge-success' : 'badge-error'">
-                  {{ correo.codigosGenerados?.length || 0 }} códigos
+                  {{ validarCodigosDisponibles(correo) ? 'Disponible' : 'No disponible' }}
                 </div>
               </div>
             </div>
             <div class="mt-4 text-sm">
-              <p><span class="font-medium">Código:</span> {{ correo.codigo || 'N/A' }}</p>
               <p><span class="font-medium">Fecha:</span> {{ formatearFecha(correo.fecha) }}</p>
             </div>
             
@@ -619,17 +654,7 @@ defineExpose({
             <div class="space-y-1 text-sm">
               <p><span class="font-medium">Correo:</span> {{ selectedEmailDetails.correo }}</p>
               <p><span class="font-medium">Nombre:</span> {{ selectedEmailDetails.nombre || 'N/A' }}</p>
-              <p><span class="font-medium">Código:</span> {{ selectedEmailDetails.codigo || 'N/A' }}</p>
               <p><span class="font-medium">Fecha:</span> {{ formatearFecha(selectedEmailDetails.fecha) }}</p>
-            </div>
-          </div>
-
-          <div v-if="selectedEmailDetails.codigosGenerados?.length">
-            <h4 class="font-semibold mb-2">Códigos Generados ({{ selectedEmailDetails.codigosGenerados.length }})</h4>
-            <div class="flex flex-wrap gap-2">
-              <div v-for="(codigo, index) in selectedEmailDetails.codigosGenerados" :key="index" class="badge badge-outline">
-                {{ codigo }}
-              </div>
             </div>
           </div>
 
