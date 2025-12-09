@@ -62,7 +62,8 @@ const nuevaCuenta = ref<AccountOwner>({
   nombre: '',
   telefono: '',
   tipo: 'Principal PS4',
-  hasStock: false
+  hasStock: false,
+  contraseña: ''
 })
 
 // Estados para drag & drop
@@ -111,7 +112,8 @@ watch(() => props.show, (newVal) => {
       nombre: '',
       telefono: '',
       tipo: 'Principal PS4',
-      hasStock: false
+      hasStock: false,
+      contraseña: ''
     }
     isDragging.value = false
     dragCounter = 0
@@ -137,7 +139,8 @@ const agregarCuenta = () => {
       nombre: '',
       telefono: '',
       tipo: 'Principal PS4',
-      hasStock: false
+      hasStock: false,
+      contraseña: ''
     }
   }
 }
@@ -156,11 +159,20 @@ const parsearArchivoTxt = (contenido: string): void => {
     
     const cuentas: AccountOwner[] = []
     lineas.forEach(linea => {
-      if (linea.includes('Principal PS4') || linea.includes('Secundaria PS4') || linea.includes('Principal PS5') || linea.includes('Secundaria PS5')) {
+      if (linea.includes('Principal PS4') || linea.includes('Secundaria PS4') || linea.includes('Principal PS5') || linea.includes('Secundaria PS5') || linea.includes('cuenta principal') || linea.includes('cuenta secundaria')) {
         let tipo: AccountType = 'Principal PS4'
-        if (linea.includes('Secundaria PS4')) tipo = 'Secundaria PS4'
+        if (linea.includes('Secundaria PS4') || linea.includes('cuenta secundaria')) tipo = 'Secundaria PS4'
         else if (linea.includes('Principal PS5')) tipo = 'Principal PS5'
         else if (linea.includes('Secundaria PS5')) tipo = 'Secundaria PS5'
+        else if (linea.includes('cuenta principal')) tipo = 'Principal PS4'
+        
+        // Extraer contraseña (primera palabra antes de "cuenta" o del tipo)
+        const palabras = linea.split(/\s+/)
+        let contraseña = ''
+        const cuentaIndex = palabras.findIndex(p => p.toLowerCase() === 'cuenta' || p.includes('Principal') || p.includes('Secundaria'))
+        if (cuentaIndex > 0) {
+          contraseña = palabras[0] || ''
+        }
         
         const esStock = /stock/i.test(linea)
         const telefonoMatch = linea.match(/\+593\s*\d+\s*\d+\s*\d+\s*\d+/)
@@ -179,13 +191,14 @@ const parsearArchivoTxt = (contenido: string): void => {
           saldo = parseFloat(saldoMatch[1])
         }
         
-        if (nombre) {
+        if (nombre || contraseña) {
           const cuentaData: AccountOwner = {
             tipo,
-            nombre,
+            nombre: nombre || '',
             telefono: telefono || '',
             saldo,
-            hasStock: esStock ? true : undefined
+            hasStock: esStock ? true : undefined,
+            contraseña: contraseña || undefined
           }
           
           cuentas.push(cuentaData)
@@ -563,16 +576,22 @@ const handleCancel = () => {
             <!-- Agregar cuenta -->
             <div class="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
               <input
+                v-model="nuevaCuenta.contraseña"
+                type="text"
+                placeholder="Contraseña"
+                class="input input-bordered input-sm md:col-span-2"
+              />
+              <input
                 v-model="nuevaCuenta.nombre"
                 type="text"
                 placeholder="Nombre"
-                class="input input-bordered input-sm md:col-span-3"
+                class="input input-bordered input-sm md:col-span-2"
               />
               <input
                 v-model="nuevaCuenta.telefono"
                 type="tel"
                 placeholder="Teléfono"
-                class="input input-bordered input-sm md:col-span-3"
+                class="input input-bordered input-sm md:col-span-2"
               />
               <select v-model="nuevaCuenta.tipo" class="select select-bordered select-sm md:col-span-3">
                 <option value="Principal PS4">Principal PS4</option>
@@ -610,6 +629,7 @@ const handleCancel = () => {
                     </span>
                     <span v-if="cuenta.hasStock" class="badge badge-sm badge-success">Stock</span>
                   </div>
+                  <p v-if="cuenta.contraseña" class="text-xs font-mono opacity-80">Contraseña: {{ cuenta.contraseña }}</p>
                   <p class="font-medium">{{ cuenta.nombre }}</p>
                   <p class="text-xs opacity-70">{{ cuenta.telefono }}</p>
                 </div>

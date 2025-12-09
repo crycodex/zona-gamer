@@ -10,6 +10,7 @@ export interface AccountOwner {
   tipo: AccountType
   saldo?: number // Saldo opcional de la cuenta
   hasStock?: boolean // Indica si esta cuenta representa stock disponible
+  contraseña?: string // Contraseña de la cuenta (primera palabra en el parseo)
 }
 
 // Estructura de precios para cada tipo de cuenta
