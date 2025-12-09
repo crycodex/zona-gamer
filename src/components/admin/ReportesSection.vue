@@ -186,7 +186,7 @@ defineExpose({
       <div>
         <h1 class="text-3xl font-bold flex items-center gap-3">
           <FileText :size="32" class="text-primary" />
-          Reportes de Mensajes WhatsApp
+          Reportes 
         </h1>
         <p class="text-base-content/60 mt-1">Historial de mensajes generados por usuarios</p>
       </div>

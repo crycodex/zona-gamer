@@ -294,12 +294,11 @@ onMounted(async () => {
               type="text"
               placeholder="Ej: Combo Assassins Creed, Combo Premium, etc."
               class="input input-bordered w-full focus:input-primary"
-              :disabled="!!combo"
               required
             />
             <label class="label">
               <span class="label-text-alt text-info">
-                Ingresa un nombre único para el combo
+                {{ combo ? 'Puedes modificar el nombre del combo' : 'Ingresa un nombre único para el combo' }}
               </span>
             </label>
           </div>
