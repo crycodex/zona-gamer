@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
-import { onAuthStateChanged } from 'firebase/auth'
+import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db } from '@/config/firebase'
+import { hasDayChanged } from '@/composables/useAuth'
 import HomeView from '@/views/HomeView.vue'
 import VerMasView from '@/views/VerMasView.vue'
 import LoginView from '@/views/auth/LoginView.vue'
@@ -153,6 +154,16 @@ router.beforeEach(
 
     // Si la ruta requiere autenticación pero no hay usuario
     if (!currentUser) {
+      next('/login')
+      return
+    }
+
+    // Verificar si ha cambiado el día - si es así, cerrar sesión automáticamente
+    if (hasDayChanged()) {
+      // Limpiar la fecha de sesión
+      localStorage.removeItem('zonagamer_session_date')
+      // Cerrar sesión en Firebase
+      await firebaseSignOut(auth)
       next('/login')
       return
     }
