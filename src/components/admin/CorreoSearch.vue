@@ -198,6 +198,9 @@ const formatearFecha = (fecha: Date | string): string => {
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
                       <p class="font-medium text-sm">{{ cuenta.nombre }}</p>
+                      <p v-if="cuenta.contraseña" class="text-xs font-mono text-base-content/80 mt-1">
+                        Contraseña: {{ cuenta.contraseña }}
+                      </p>
                       <p class="text-xs text-base-content/60 mt-1">
                         <Phone :size="12" class="inline mr-1" />
                         {{ cuenta.telefono }}

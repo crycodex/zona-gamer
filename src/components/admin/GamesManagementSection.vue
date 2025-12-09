@@ -930,6 +930,7 @@ defineExpose({
           <div v-for="(resultado, index) in resultadosTelefono" :key="index" class="card bg-base-200">
             <div class="card-body p-3">
               <h4 class="font-semibold text-sm">{{ resultado.cuenta.nombre }}</h4>
+              <p v-if="resultado.cuenta.contraseña" class="text-xs font-mono opacity-80">Contraseña: {{ resultado.cuenta.contraseña }}</p>
               <p class="text-xs"><Phone :size="12" class="inline mr-1" />{{ resultado.cuenta.telefono }}</p>
               <button @click="verCorreosJuego(resultado.juego)" class="btn btn-xs btn-ghost mt-2 w-full">
                 Ver correos →
@@ -1204,6 +1205,7 @@ defineExpose({
                       {{ cuenta.tipo }}
                     </span>
                     <span class="font-medium ml-2">{{ cuenta.nombre }}</span>
+                    <div v-if="cuenta.contraseña" class="text-xs font-mono opacity-80 mt-1">Contraseña: {{ cuenta.contraseña }}</div>
                     <div class="text-xs opacity-70">{{ cuenta.telefono }}</div>
                   </div>
                 </div>
