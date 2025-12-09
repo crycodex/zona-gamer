@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useReportes } from '@/composables/useReportes'
 import ReportesCharts from './ReportesCharts.vue'
+import Pagination from '@/components/ui/Pagination.vue'
 import { FileText, RefreshCw, Calendar, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-vue-next'
 
 const {
@@ -23,6 +24,10 @@ const mostrarGraficos = ref(true)
 // Estados para ordenamiento
 const ordenarPor = ref<'fecha' | 'usuario' | 'juego' | 'rol'>('fecha')
 const ordenDireccion = ref<'asc' | 'desc'>('desc') // Por defecto descendente (más recientes primero)
+
+// Estados para paginación
+const paginaActual = ref(1)
+const itemsPorPagina = 10
 
 // Computed para reportes filtrados y ordenados
 const reportesFiltrados = computed(() => {
@@ -95,6 +100,54 @@ const reportesFiltrados = computed(() => {
   return resultado
 })
 
+// Computed para reportes paginados
+const reportesPaginados = computed(() => {
+  const inicio = (paginaActual.value - 1) * itemsPorPagina
+  const fin = inicio + itemsPorPagina
+  return reportesFiltrados.value.slice(inicio, fin)
+})
+
+// Computed para total de páginas
+const totalPaginas = computed(() => {
+  return Math.ceil(reportesFiltrados.value.length / itemsPorPagina)
+})
+
+// Función para cambiar de página
+const cambiarPagina = (nuevaPagina: number): void => {
+  paginaActual.value = nuevaPagina
+}
+
+// Función para ir a la página siguiente
+const siguientePagina = (): void => {
+  if (paginaActual.value < totalPaginas.value) {
+    paginaActual.value++
+  }
+}
+
+// Función para ir a la página anterior
+const anteriorPagina = (): void => {
+  if (paginaActual.value > 1) {
+    paginaActual.value--
+  }
+}
+
+// Computed para el rango de items mostrados
+const rangoItems = computed(() => {
+  const inicio = (paginaActual.value - 1) * itemsPorPagina + 1
+  const fin = Math.min(paginaActual.value * itemsPorPagina, reportesFiltrados.value.length)
+  return { inicio, fin }
+})
+
+// Resetear a la primera página cuando cambian los filtros
+const resetearPaginacion = (): void => {
+  paginaActual.value = 1
+}
+
+// Watch para resetear paginación cuando cambian los filtros
+watch([filtroUsuarioReporte, filtroRolReporte, busquedaReporte, fechaInicio, fechaFin, ordenarPor, ordenDireccion], () => {
+  resetearPaginacion()
+})
+
 const estadisticasReportes = computed(() => {
   return obtenerEstadisticas()
 })
@@ -138,6 +191,7 @@ const limpiarFiltrosReportes = (): void => {
   busquedaReporte.value = ''
   fechaInicio.value = ''
   fechaFin.value = ''
+  resetearPaginacion()
 }
 
 // Función para cambiar ordenamiento
@@ -428,8 +482,8 @@ defineExpose({
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(reporte, index) in reportesFiltrados" :key="reporte.id">
-                <td>{{ index + 1 }}</td>
+              <tr v-for="(reporte, index) in reportesPaginados" :key="reporte.id">
+                <td>{{ rangoItems.inicio + index }}</td>
                 <td class="text-sm">{{ formatearFechaReporte(reporte.fechaGeneracion) }}</td>
                 <td>
                   <div class="font-medium">{{ reporte.nombreUsuario }}</div>
@@ -461,8 +515,19 @@ defineExpose({
           </table>
         </div>
 
+        <!-- Paginación -->
+        <div v-if="reportesFiltrados.length > 0" class="mt-6">
+          <Pagination
+            :current-page="paginaActual"
+            :total-pages="totalPaginas"
+            @page-change="cambiarPagina"
+            @next="siguientePagina"
+            @prev="anteriorPagina"
+          />
+        </div>
+
         <div v-if="reportesFiltrados.length > 0" class="mt-4 text-sm text-base-content/60 text-center">
-          Mostrando {{ reportesFiltrados.length }} reporte(s)
+          Mostrando {{ rangoItems.inicio }}-{{ rangoItems.fin }} de {{ reportesFiltrados.length }} reporte(s)
         </div>
       </div>
     </div>
