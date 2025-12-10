@@ -112,30 +112,32 @@ const getVersionDescription = (type: AccountType): string => {
     class="card bg-base-100 shadow-lg hover:shadow-2xl relative overflow-hidden group border border-white/10 transition-all duration-300 flex flex-col h-full hover:-translate-y-2"
   >
     <!-- Imagen del juego -->
-    <figure class="relative bg-base-300 overflow-hidden" style="aspect-ratio: 446 / 537;">
-      <img 
-        v-if="game.foto" 
-        :src="game.foto" 
-        :alt="game.nombre"
-        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        loading="lazy"
-      />
-      <div v-else class="w-full h-full flex items-center justify-center">
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          class="h-16 w-16 opacity-20" 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor"
-        >
-          <path 
-            stroke-linecap="round" 
-            stroke-linejoin="round" 
-            stroke-width="2" 
-            d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" 
-          />
-        </svg>
-      </div>
+    <div class="relative bg-base-300 overflow-hidden" style="aspect-ratio: 446 / 537;">
+      <figure class="relative w-full h-full" style="transform: scale(0.9); transform-origin: center;">
+        <img 
+          v-if="game.foto" 
+          :src="game.foto" 
+          :alt="game.nombre"
+          class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          loading="lazy"
+        />
+        <div v-else class="w-full h-full flex items-center justify-center">
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            class="h-16 w-16 opacity-20" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="2" 
+              d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" 
+            />
+          </svg>
+        </div>
+      </figure>
 
       <!-- Badge de descuento - Esquina superior izquierda -->
       <div 
@@ -161,7 +163,7 @@ const getVersionDescription = (type: AccountType): string => {
 
       <!-- Overlay gradient -->
       <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-    </figure>
+    </div>
 
     <!-- Contenido de la card -->
     <div class="card-body p-4 space-y-3 flex-grow flex flex-col">

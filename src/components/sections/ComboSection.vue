@@ -195,7 +195,7 @@ const handleVerMas = () => {
             >
               <div class="card bg-base-100 shadow-xl hover:shadow-2xl border border-white/10 overflow-hidden group transition-all duration-300 hover:scale-[1.02] h-full flex flex-col">
                 <!-- Imagen del combo -->
-                <figure class="relative h-48 bg-linear-gradient(to bottom, #ef4444/20, #9333ea/20, #f59e0b/20) overflow-hidden">
+                <figure class="relative h-44 bg-linear-gradient(to bottom, #ef4444/20, #9333ea/20, #f59e0b/20) overflow-hidden">
                   <img 
                     v-if="combo.foto" 
                     :src="combo.foto" 

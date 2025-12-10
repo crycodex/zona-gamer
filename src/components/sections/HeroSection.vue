@@ -184,7 +184,7 @@ onUnmounted(() => {
             class="absolute inset-0 flex items-center justify-center transition-all duration-500"
             :class="{ 'opacity-0 scale-95': isAnimating, 'opacity-100 scale-100': !isAnimating }"
           >
-            <div class="relative w-full max-w-[280px] sm:max-w-sm md:max-w-md mx-auto">
+            <div class="relative w-full max-w-[252px] sm:max-w-[345px] md:max-w-[403px] mx-auto">
               <!-- Glow effect -->
               <div class="absolute inset-0 bg-error/20 blur-3xl rounded-3xl"></div>
               
@@ -237,7 +237,7 @@ onUnmounted(() => {
             <div 
               v-for="(game, index) in nextGames" 
               :key="game?.id"
-              class="w-32 h-44 rounded-xl overflow-hidden shadow-lg transform transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-white/20"
+              class="w-28 h-40 rounded-xl overflow-hidden shadow-lg transform transition-all duration-300 hover:scale-105 cursor-pointer border-2 border-white/20"
               :style="{ transform: `translateX(-${index * 20}px) scale(${1 - index * 0.1})`, opacity: 1 - index * 0.3 }"
               @click="nextGame"
             >
