@@ -19,9 +19,16 @@ const shuffledGames = ref<GameSummary[]>([])
 
 // Obtener más juegos para el masonry (necesitamos más imágenes)
 const allFeaturedGames = computed(() => {
-  return props.games
-    .filter(game => game.activo !== false && game.foto)
-    .slice(0, 18) // Más juegos para mejor efecto
+  const filtered = props.games.filter(game => game.activo !== false && game.foto)
+  // Si hay menos de 18 juegos, los repetimos para tener suficiente contenido
+  if (filtered.length < 18) {
+    const repeated: GameSummary[] = []
+    while (repeated.length < 18) {
+      repeated.push(...filtered)
+    }
+    return repeated.slice(0, 18)
+  }
+  return filtered.slice(0, 18)
 })
 
 // Función para mezclar array aleatoriamente (Fisher-Yates)
@@ -61,8 +68,17 @@ const masonryColumns = computed(() => {
     }
   })
   
-  // Duplicar cada columna para crear efecto de loop infinito
-  return columns.map(column => [...column, ...column, ...column])
+  // Duplicar cada columna múltiples veces para crear efecto de loop infinito perfecto
+  // Duplicamos 6 veces para asegurar que siempre haya contenido visible sin huecos
+  return columns.map(column => {
+    if (column.length === 0) return []
+    // Duplicar 6 veces para tener suficiente contenido
+    const duplicated: GameSummary[] = []
+    for (let i = 0; i < 6; i++) {
+      duplicated.push(...column)
+    }
+    return duplicated
+  })
 })
 
 // Estado de pausa para cada columna
@@ -72,7 +88,6 @@ const isPaused = ref(false)
 const startAutoScroll = () => {
   const scrollSpeed = 0.5 // píxeles por frame
   // Direcciones alternadas: abajo, arriba, abajo (para 3 columnas)
-  // En responsive (2 columnas): abajo, arriba
   const scrollDirections = [1, -1, 1] // Direcciones: abajo, arriba, abajo
   
   // Esperar un momento para que el DOM esté completamente renderizado
@@ -86,47 +101,97 @@ const startAutoScroll = () => {
       
       if (!columnContent) return
       
-      // Obtener altura de un tercio del contenido (ya que está duplicado 3 veces)
-      const getSegmentHeight = () => {
+      // Calcular altura de UNA copia del contenido original (sin duplicar)
+      const getOriginalHeight = () => {
         const items = columnContent.querySelectorAll('.masonry-item')
         if (items.length === 0) return 0
-        const segmentCount = 3
-        const segmentLength = Math.floor(items.length / segmentCount)
+        
+        // Como duplicamos 6 veces, dividimos el total por 6
+        const itemsPerCopy = Math.floor(items.length / 6)
+        if (itemsPerCopy === 0) return 0
+        
         let height = 0
-        for (let i = 0; i < segmentLength; i++) {
+        
+        // Calcular altura de la primera copia (items del 0 al itemsPerCopy-1)
+        for (let i = 0; i < itemsPerCopy; i++) {
           const item = items[i] as HTMLElement
           if (item) {
-            height += item.offsetHeight + 12 // 12px es el gap
+            // Obtener altura real del item
+            const rect = item.getBoundingClientRect()
+            const itemHeight = rect.height || item.offsetHeight
+            if (itemHeight > 0) {
+              height += itemHeight + 12 // 12px es el gap (0.75rem)
+            }
           }
         }
+        
         return height
       }
       
-      const segmentHeight = getSegmentHeight()
-      
-      const scroll = () => {
-        if (!column || !columnContent || isPaused.value) return
-        
-        scrollPosition += scrollSpeed * direction
-        
-        // Loop infinito: cuando llegamos al final de un segmento, reiniciamos
-        if (direction > 0) {
-          // Scroll hacia abajo
-          if (scrollPosition >= segmentHeight) {
-            scrollPosition = scrollPosition - segmentHeight
+      // Esperar a que los items se rendericen completamente antes de calcular
+      const initScroll = () => {
+        // Esperar a que las imágenes se carguen
+        const checkReady = () => {
+          const items = columnContent.querySelectorAll('.masonry-item')
+          if (items.length === 0) {
+            setTimeout(checkReady, 100)
+            return
           }
-        } else {
-          // Scroll hacia arriba
-          if (scrollPosition <= -segmentHeight) {
-            scrollPosition = scrollPosition + segmentHeight
+          
+          // Verificar que al menos el primer item tenga altura
+          const firstItem = items[0] as HTMLElement
+          if (firstItem && firstItem.offsetHeight === 0) {
+            setTimeout(checkReady, 100)
+            return
           }
+          
+          const originalHeight = getOriginalHeight()
+          
+          if (originalHeight === 0) {
+            // Si aún no hay altura, intentar de nuevo
+            setTimeout(checkReady, 100)
+            return
+          }
+          
+          const containerHeight = column.clientHeight
+          
+          // Asegurar que el segmento sea al menos tan alto como el contenedor
+          // Esto previene huecos cuando se reinicia
+          const segmentHeight = Math.max(originalHeight, containerHeight)
+          
+          const scroll = () => {
+            if (!column || !columnContent || isPaused.value) return
+            
+            scrollPosition += scrollSpeed * direction
+            
+            // Loop infinito perfecto: reiniciamos cuando llegamos al final de una copia
+            // Como tenemos 6 copias, siempre hay contenido visible
+            if (direction > 0) {
+              // Scroll hacia abajo
+              if (scrollPosition >= segmentHeight) {
+                scrollPosition = scrollPosition - segmentHeight
+              }
+            } else {
+              // Scroll hacia arriba
+              if (scrollPosition <= -segmentHeight) {
+                scrollPosition = scrollPosition + segmentHeight
+              }
+            }
+            
+            // Aplicar el scroll considerando la rotación de 45 grados
+            // El scroll funciona en la dirección del contenedor rotado
+            columnContent.style.transform = `translateY(${scrollPosition}px)`
+          }
+          
+          const intervalId = window.setInterval(scroll, 16) // ~60fps
+          scrollIntervals[index] = intervalId
         }
         
-        columnContent.style.transform = `translateY(${scrollPosition}px)`
+        // Esperar un poco más para que todo se renderice
+        setTimeout(checkReady, 500)
       }
       
-      const intervalId = window.setInterval(scroll, 16) // ~60fps
-      scrollIntervals[index] = intervalId
+      initScroll()
     })
   }, 100)
 }
@@ -285,13 +350,14 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <!-- Lado Derecho: Masonry Layout con carrusel tipo ascensor -->
+        <!-- Lado Derecho: Masonry Layout con carrusel tipo ascensor a 45 grados -->
         <div class="relative h-[500px] sm:h-[600px] lg:h-[700px] animate-fadeInRight mt-8 lg:mt-0 overflow-hidden" v-if="allFeaturedGames.length > 0">
           <div 
-            class="masonry-container h-full"
+            class="masonry-container-wrapper h-full w-full overflow-hidden"
             @mouseenter="pauseScroll"
             @mouseleave="resumeScroll"
           >
+            <div class="masonry-container h-full">
             <div 
               v-for="(column, colIndex) in masonryColumns" 
               :key="colIndex"
@@ -341,6 +407,7 @@ onUnmounted(() => {
                 </div>
               </div>
               </div>
+            </div>
             </div>
           </div>
         </div>
@@ -494,6 +561,11 @@ onUnmounted(() => {
 }
 
 /* Masonry Layout Styles */
+.masonry-container-wrapper {
+  position: relative;
+  overflow: hidden;
+}
+
 .masonry-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -501,6 +573,17 @@ onUnmounted(() => {
   padding: 0.5rem;
   height: 100%;
   overflow: hidden;
+  /* Rotación de 45 grados para el contenedor (al otro lado) */
+  transform: rotate(45deg);
+  transform-origin: center center;
+  /* Ajustar tamaño para compensar la rotación (√2 ≈ 1.4142) */
+  width: 141.42%;
+  height: 141.42%;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -70.71%;
+  margin-top: -70.71%;
 }
 
 .masonry-column-wrapper {
@@ -515,6 +598,8 @@ onUnmounted(() => {
   gap: 0.75rem;
   transition: transform 0.1s linear;
   will-change: transform;
+  /* El contenido se duplica 6 veces, así que siempre hay suficiente */
+  /* No necesitamos min-height porque el contenido ya es suficiente */
 }
 
 .masonry-item {
@@ -526,10 +611,13 @@ onUnmounted(() => {
   transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.5s ease;
   display: flex;
   flex-direction: column;
+  /* Rotar cada item de vuelta a -45 grados para que se vea recto */
+  transform: rotate(-45deg);
+  transform-origin: center center;
 }
 
 .masonry-item:hover {
-  transform: translateY(-4px);
+  transform: rotate(-45deg) translateY(-4px) scale(1.05);
   box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);
 }
 
@@ -568,6 +656,11 @@ onUnmounted(() => {
   .masonry-container {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
+    /* Ajustar rotación y tamaño en tablet */
+    width: 141.42%;
+    height: 141.42%;
+    margin-left: -70.71%;
+    margin-top: -70.71%;
   }
 }
 
@@ -576,6 +669,11 @@ onUnmounted(() => {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
     padding: 0.25rem;
+    /* En móvil, mantener la rotación pero ajustar el tamaño */
+    width: 141.42%;
+    height: 141.42%;
+    margin-left: -70.71%;
+    margin-top: -70.71%;
   }
   
   .masonry-item {
