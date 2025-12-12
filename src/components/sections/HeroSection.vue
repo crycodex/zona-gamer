@@ -17,18 +17,24 @@ let scrollIntervals: (number | null)[] = []
 let reorderInterval: number | null = null
 const shuffledGames = ref<GameSummary[]>([])
 
-// Obtener más juegos para el masonry (necesitamos más imágenes)
+// Obtener juegos limitados para el masonry (optimización: máximo 12 juegos)
 const allFeaturedGames = computed(() => {
   const filtered = props.games.filter(game => game.activo !== false && game.foto)
-  // Si hay menos de 18 juegos, los repetimos para tener suficiente contenido
-  if (filtered.length < 18) {
+  // Limitar a 12 juegos máximo para mejor rendimiento
+  const maxGames = 12
+  if (filtered.length === 0) return []
+  
+  // Si hay menos juegos, los repetimos hasta llegar al máximo
+  if (filtered.length < maxGames) {
     const repeated: GameSummary[] = []
-    while (repeated.length < 18) {
+    while (repeated.length < maxGames) {
       repeated.push(...filtered)
     }
-    return repeated.slice(0, 18)
+    return repeated.slice(0, maxGames)
   }
-  return filtered.slice(0, 18)
+  
+  // Si hay muchos juegos, solo tomar los primeros 12
+  return filtered.slice(0, maxGames)
 })
 
 // Función para mezclar array aleatoriamente (Fisher-Yates)
@@ -68,27 +74,26 @@ const masonryColumns = computed(() => {
     }
   })
   
-  // Duplicar cada columna múltiples veces para crear efecto de loop infinito perfecto
-  // Duplicamos 6 veces para asegurar que siempre haya contenido visible sin huecos
+  // Duplicar cada columna para crear efecto de loop infinito
+  // Optimización: solo duplicar 3 veces (suficiente para el loop sin sobrecargar)
   return columns.map(column => {
     if (column.length === 0) return []
-    // Duplicar 6 veces para tener suficiente contenido
-    const duplicated: GameSummary[] = []
-    for (let i = 0; i < 6; i++) {
-      duplicated.push(...column)
-    }
-    return duplicated
+    // Duplicar 3 veces: suficiente para el loop infinito sin sobrecargar el DOM
+    return [...column, ...column, ...column]
   })
 })
 
 // Estado de pausa para cada columna
 const isPaused = ref(false)
 
-// Auto-scroll independiente para cada columna (ascensor)
+// Auto-scroll independiente para cada columna (ascensor) - Optimizado
 const startAutoScroll = () => {
   const scrollSpeed = 0.5 // píxeles por frame
   // Direcciones alternadas: abajo, arriba, abajo (para 3 columnas)
   const scrollDirections = [1, -1, 1] // Direcciones: abajo, arriba, abajo
+  
+  // Usar requestAnimationFrame para mejor rendimiento
+  let animationFrameId: number | null = null
   
   // Esperar un momento para que el DOM esté completamente renderizado
   setTimeout(() => {
@@ -101,94 +106,98 @@ const startAutoScroll = () => {
       
       if (!columnContent) return
       
-      // Calcular altura de UNA copia del contenido original (sin duplicar)
+      // Calcular altura de UNA copia del contenido original (sin duplicar) - Optimizado
       const getOriginalHeight = () => {
         const items = columnContent.querySelectorAll('.masonry-item')
         if (items.length === 0) return 0
         
-        // Como duplicamos 6 veces, dividimos el total por 6
-        const itemsPerCopy = Math.floor(items.length / 6)
+        // Como duplicamos 3 veces, dividimos el total por 3
+        const itemsPerCopy = Math.floor(items.length / 3)
         if (itemsPerCopy === 0) return 0
         
         let height = 0
         
-        // Calcular altura de la primera copia (items del 0 al itemsPerCopy-1)
+        // Calcular altura solo de los primeros items (más eficiente)
         for (let i = 0; i < itemsPerCopy; i++) {
           const item = items[i] as HTMLElement
-          if (item) {
-            // Obtener altura real del item
-            const rect = item.getBoundingClientRect()
-            const itemHeight = rect.height || item.offsetHeight
-            if (itemHeight > 0) {
-              height += itemHeight + 12 // 12px es el gap (0.75rem)
-            }
+          if (item && item.offsetHeight > 0) {
+            height += item.offsetHeight + 12 // 12px es el gap (0.75rem)
           }
         }
         
         return height
       }
       
-      // Esperar a que los items se rendericen completamente antes de calcular
+      // Esperar a que los items se rendericen - Optimizado con menos reintentos
       const initScroll = () => {
-        // Esperar a que las imágenes se carguen
+        const maxRetries = 10
+        let retries = 0
+        
         const checkReady = () => {
           const items = columnContent.querySelectorAll('.masonry-item')
-          if (items.length === 0) {
-            setTimeout(checkReady, 100)
+          if (items.length === 0 || retries >= maxRetries) {
+            if (retries < maxRetries) {
+              retries++
+              setTimeout(checkReady, 100)
+            }
             return
           }
           
           // Verificar que al menos el primer item tenga altura
           const firstItem = items[0] as HTMLElement
           if (firstItem && firstItem.offsetHeight === 0) {
-            setTimeout(checkReady, 100)
+            if (retries < maxRetries) {
+              retries++
+              setTimeout(checkReady, 100)
+            }
             return
           }
           
           const originalHeight = getOriginalHeight()
           
           if (originalHeight === 0) {
-            // Si aún no hay altura, intentar de nuevo
-            setTimeout(checkReady, 100)
+            if (retries < maxRetries) {
+              retries++
+              setTimeout(checkReady, 100)
+            }
             return
           }
           
           const containerHeight = column.clientHeight
           
           // Asegurar que el segmento sea al menos tan alto como el contenedor
-          // Esto previene huecos cuando se reinicia
           const segmentHeight = Math.max(originalHeight, containerHeight)
           
-          const scroll = () => {
-            if (!column || !columnContent || isPaused.value) return
+          // Usar requestAnimationFrame en lugar de setInterval para mejor rendimiento
+          const animate = () => {
+            if (!column || !columnContent || isPaused.value) {
+              animationFrameId = requestAnimationFrame(animate)
+              return
+            }
             
             scrollPosition += scrollSpeed * direction
             
-            // Loop infinito perfecto: reiniciamos cuando llegamos al final de una copia
-            // Como tenemos 6 copias, siempre hay contenido visible
+            // Loop infinito: reiniciamos cuando llegamos al final de una copia
             if (direction > 0) {
-              // Scroll hacia abajo
               if (scrollPosition >= segmentHeight) {
                 scrollPosition = scrollPosition - segmentHeight
               }
             } else {
-              // Scroll hacia arriba
               if (scrollPosition <= -segmentHeight) {
                 scrollPosition = scrollPosition + segmentHeight
               }
             }
             
-            // Aplicar el scroll considerando la rotación de 45 grados
-            // El scroll funciona en la dirección del contenedor rotado
             columnContent.style.transform = `translateY(${scrollPosition}px)`
+            animationFrameId = requestAnimationFrame(animate)
           }
           
-          const intervalId = window.setInterval(scroll, 16) // ~60fps
-          scrollIntervals[index] = intervalId
+          animationFrameId = requestAnimationFrame(animate)
+          scrollIntervals[index] = animationFrameId as unknown as number
         }
         
-        // Esperar un poco más para que todo se renderice
-        setTimeout(checkReady, 500)
+        // Esperar menos tiempo para iniciar más rápido
+        setTimeout(checkReady, 300)
       }
       
       initScroll()
@@ -208,9 +217,9 @@ const resumeScroll = () => {
 
 // Detener auto-scroll
 const stopAutoScroll = () => {
-  scrollIntervals.forEach((intervalId) => {
-    if (intervalId) {
-      clearInterval(intervalId)
+  scrollIntervals.forEach((animationFrameId) => {
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId as unknown as number)
     }
   })
   scrollIntervals = []
