@@ -86,6 +86,42 @@ const masonryColumns = computed(() => {
 // Estado de pausa para cada columna
 const isPaused = ref(false)
 
+// Carrusel horizontal para móvil
+const carouselIndex = ref(0)
+const isCarouselPaused = ref(false)
+let carouselInterval: number | null = null
+
+// Iniciar carrusel horizontal para móvil
+const startCarousel = () => {
+  if (allFeaturedGames.value.length === 0) return
+  
+  const carousel = () => {
+    if (isCarouselPaused.value) return
+    
+    carouselIndex.value = (carouselIndex.value + 1) % allFeaturedGames.value.length
+  }
+  
+  carouselInterval = window.setInterval(carousel, 3000) // Cambiar cada 3 segundos
+}
+
+// Pausar carrusel
+const pauseCarousel = () => {
+  isCarouselPaused.value = true
+}
+
+// Reanudar carrusel
+const resumeCarousel = () => {
+  isCarouselPaused.value = false
+}
+
+// Detener carrusel
+const stopCarousel = () => {
+  if (carouselInterval) {
+    clearInterval(carouselInterval)
+    carouselInterval = null
+  }
+}
+
 // Auto-scroll independiente para cada columna (ascensor) - Optimizado
 const startAutoScroll = () => {
   const scrollSpeed = 0.5 // píxeles por frame
@@ -242,6 +278,9 @@ const handleAddToCart = (game: GameSummary | undefined) => {
   cartStore.addToCart(game, 1, 'Principal PS4')
 }
 
+// Handler para resize
+let resizeHandler: (() => void) | null = null
+
 onMounted(() => {
   // Inicializar con juegos mezclados
   reorderGames()
@@ -253,21 +292,45 @@ onMounted(() => {
   
   // Iniciar auto-scroll después de un pequeño delay para que el DOM esté listo
   setTimeout(() => {
-    startAutoScroll()
+    // Iniciar masonry en tablet y desktop (768px+)
+    if (window.innerWidth >= 768) {
+      startAutoScroll()
+    } else {
+      // En móvil pequeño, iniciar carrusel horizontal
+      startCarousel()
+    }
   }, 500)
+  
+  // Escuchar cambios de tamaño de ventana
+  resizeHandler = () => {
+    if (window.innerWidth >= 768) {
+      stopCarousel()
+      startAutoScroll()
+    } else {
+      stopAutoScroll()
+      startCarousel()
+    }
+  }
+  
+  window.addEventListener('resize', resizeHandler)
 })
 
 onUnmounted(() => {
   stopAutoScroll()
+  stopCarousel()
   if (reorderInterval) {
     clearInterval(reorderInterval)
     reorderInterval = null
+  }
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+    resizeHandler = null
   }
 })
 </script>
 
 <template>
-  <section class="relative min-h-screen flex items-center overflow-hidden bg-linear-gradient(to bottom, #1a1a1a, #2a2a2a) py-20 md:py-0">
+  <section class="relative min-h-screen flex items-center overflow-hidden bg-linear-gradient(to bottom, #1a1a1a, #2a2a2a) py-20 md:py-0" style="min-height: 100vh; min-height: 100dvh;">
     <!-- Fondo animado gamer -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
       <!-- Gradientes de fondo -->
@@ -296,22 +359,22 @@ onUnmounted(() => {
       <div class="absolute inset-0 opacity-5" style="background-image: linear-gradient(#ef4444 1px, transparent 1px), linear-gradient(90deg, #ef4444 1px, transparent 1px); background-size: 50px 50px;"></div>
     </div>
 
-    <div class="container mx-auto px-4 md:px-6 relative z-10">
-      <div class="grid lg:grid-cols-2 gap-8 md:gap-10 lg:gap-12 items-center">
+    <div class="container mx-auto px-4 md:px-6 relative z-10 py-8 md:py-0">
+      <div class="grid lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12 items-center">
         <!-- Lado Izquierdo: Contenido -->
         <div class="space-y-6 md:space-y-8 animate-fadeInLeft text-center lg:text-left">
          
 
           <!-- Título Principal -->
-          <div class="space-y-3 md:space-y-4">
-            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
+          <div class="space-y-2 sm:space-y-3 md:space-y-4">
+            <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-tight">
               <span class="text-white">Tu Tienda</span>
               <br />
               <span class="text-gradient-hero font-bold">Gamer</span>
               <br />
               <span class="text-white">De Confianza</span>
             </h1>
-            <p class="text-base sm:text-lg md:text-xl text-base-content/70 max-w-xl mx-auto lg:mx-0">
+            <p class="text-sm sm:text-base md:text-lg lg:text-xl text-base-content/70 max-w-xl mx-auto lg:mx-0">
               Encuentra los mejores juegos para PlayStation 4 y 5. 
               <br class="hidden sm:block" />
               Cuentas verificadas, entrega inmediata y los mejores precios del mercado.
@@ -319,50 +382,51 @@ onUnmounted(() => {
           </div>
 
           <!-- Estadísticas -->
-          <div class="flex flex-wrap justify-center lg:justify-start gap-4 sm:gap-6">
-            <div class="flex items-center gap-2 sm:gap-3 bg-base-100/30 backdrop-blur-sm px-4 py-3 rounded-xl">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-error/20 flex items-center justify-center shrink-0">
-                <Gamepad2 :size="20" class="text-error sm:w-6 sm:h-6" />
+          <div class="flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4 md:gap-6">
+            <div class="flex items-center gap-2 sm:gap-3 bg-base-100/30 backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 rounded-xl">
+              <div class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-error/20 flex items-center justify-center shrink-0">
+                <Gamepad2 :size="18" class="text-error sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
               <div>
-                <p class="text-xl sm:text-2xl font-bold text-white">{{ games.length }}+</p>
-                <p class="text-xs sm:text-sm text-base-content/60">Juegos Disponibles</p>
+                <p class="text-lg sm:text-xl md:text-2xl font-bold text-white">{{ games.length }}+</p>
+                <p class="text-xs text-base-content/60">Juegos Disponibles</p>
               </div>
             </div>
-            <div class="flex items-center gap-2 sm:gap-3 bg-base-100/30 backdrop-blur-sm px-4 py-3 rounded-xl">
-              <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-warning/20 flex items-center justify-center shrink-0">
-                <Star :size="20" class="text-warning sm:w-6 sm:h-6" />
+            <div class="flex items-center gap-2 sm:gap-3 bg-base-100/30 backdrop-blur-sm px-3 sm:px-4 py-2 sm:py-3 rounded-xl">
+              <div class="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-full bg-warning/20 flex items-center justify-center shrink-0">
+                <Star :size="18" class="text-warning sm:w-5 sm:h-5 md:w-6 md:h-6" />
               </div>
               <div>
-                <p class="text-xl sm:text-2xl font-bold text-white">100%</p>
-                <p class="text-xs sm:text-sm text-base-content/60">Verificado</p>
+                <p class="text-lg sm:text-xl md:text-2xl font-bold text-white">100%</p>
+                <p class="text-xs text-base-content/60">Verificado</p>
               </div>
             </div>
           </div>
 
           <!-- CTAs -->
-          <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 max-w-lg mx-auto lg:mx-0">
+          <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 md:gap-4 max-w-lg mx-auto lg:mx-0">
             <button 
               @click="handleWhatsApp"
-              class="btn btn-success btn-md sm:btn-lg gap-2 sm:gap-3 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+              class="btn btn-success btn-sm sm:btn-md md:btn-lg gap-2 text-white shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
             >
-              <MessageCircle :size="20" class="sm:w-6 sm:h-6" />
-              <span class="text-sm sm:text-base">Contactar por WhatsApp</span>
+              <MessageCircle :size="18" class="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+              <span class="text-xs sm:text-sm md:text-base">Contactar por WhatsApp</span>
             </button>
             <button 
               @click="handleExploreCatalog"
-              class="btn btn-outline btn-md sm:btn-lg gap-2 sm:gap-3 hover:btn-error transition-all duration-300"
+              class="btn btn-outline btn-sm sm:btn-md md:btn-lg gap-2 hover:btn-error transition-all duration-300"
             >
-              <Gamepad2 :size="20" class="sm:w-6 sm:h-6" />
-              <span class="text-sm sm:text-base">Explorar Catálogo</span>
+              <Gamepad2 :size="18" class="sm:w-5 sm:h-5 md:w-6 md:h-6" />
+              <span class="text-xs sm:text-sm md:text-base">Explorar Catálogo</span>
             </button>
           </div>
         </div>
 
-        <!-- Lado Derecho: Masonry Layout con carrusel tipo ascensor a 45 grados -->
-        <div class="relative h-[500px] sm:h-[600px] lg:h-[700px] animate-fadeInRight mt-8 lg:mt-0 overflow-hidden" v-if="allFeaturedGames.length > 0">
+          <!-- Lado Derecho: Masonry (Desktop/Tablet) / Carrusel Horizontal (Móvil) -->
+        <div class="relative h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] xl:h-[700px] animate-fadeInRight mt-8 lg:mt-0 overflow-hidden" v-if="allFeaturedGames.length > 0">
+          <!-- Masonry para Desktop y Tablet (oculto solo en móvil pequeño) -->
           <div 
-            class="masonry-container-wrapper h-full w-full overflow-hidden"
+            class="hidden md:block masonry-container-wrapper h-full w-full overflow-hidden"
             @mouseenter="pauseScroll"
             @mouseleave="resumeScroll"
           >
@@ -417,6 +481,72 @@ onUnmounted(() => {
               </div>
               </div>
             </div>
+            </div>
+          </div>
+
+          <!-- Carrusel Horizontal para Móvil (visible solo en móvil pequeño) -->
+          <div 
+            class="md:hidden carousel-container h-full w-full overflow-hidden relative"
+            @mouseenter="pauseCarousel"
+            @mouseleave="resumeCarousel"
+            @touchstart="pauseCarousel"
+            @touchend="resumeCarousel"
+          >
+            <div class="carousel-wrapper h-full flex items-center">
+              <div 
+                class="carousel-track flex transition-transform duration-500 ease-in-out"
+                :style="{ transform: `translateX(-${carouselIndex * 100}%)` }"
+              >
+                <div
+                  v-for="(game, index) in allFeaturedGames"
+                  :key="game.id"
+                  class="carousel-slide shrink-0 w-full h-full px-4 flex items-center justify-center"
+                >
+                  <div class="relative w-full max-w-[200px] mx-auto group cursor-pointer" @click="handleAddToCart(game)">
+                    <!-- Imagen -->
+                    <div class="relative w-full overflow-hidden rounded-xl shadow-2xl">
+                      <img 
+                        v-if="game?.foto"
+                        :src="game.foto" 
+                        :alt="game.nombre"
+                        class="w-full h-auto object-contain"
+                      />
+                      <!-- Overlay con gradiente -->
+                      <div class="absolute inset-0 bg-linear-gradient(to top, rgba(0,0,0,0.7), transparent)"></div>
+                      
+                      <!-- Badge de oferta -->
+                      <div 
+                        v-if="game?.descuento && game.descuento > 0"
+                        class="absolute top-2 right-2 z-10 bg-error text-white px-2 py-1 rounded-full font-bold text-xs shadow-lg"
+                      >
+                        -{{ game.descuento }}%
+                      </div>
+                      
+                      <!-- Información -->
+                      <div class="absolute bottom-0 left-0 right-0 p-3">
+                        <h3 class="text-sm font-bold text-white mb-1 line-clamp-2">{{ game.nombre }}</h3>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="badge badge-error badge-xs">{{ game.version }}</span>
+                          <span v-if="game?.tipoPromocion && game.tipoPromocion !== 'ninguna'" class="badge badge-warning badge-xs">
+                            {{ game.tipoPromocion }}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Indicadores del carrusel -->
+            <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+              <button
+                v-for="(game, index) in allFeaturedGames"
+                :key="game.id"
+                @click="carouselIndex = index"
+                class="w-2 h-2 rounded-full transition-all duration-300"
+                :class="index === carouselIndex ? 'bg-error w-6' : 'bg-base-content/30'"
+              />
             </div>
           </div>
         </div>
@@ -554,6 +684,14 @@ onUnmounted(() => {
   section {
     min-height: 100vh;
     min-height: 100dvh; /* Dynamic viewport height for mobile */
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+  
+  /* Asegurar que el contenido no se corte */
+  .container {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
   }
 }
 
@@ -593,6 +731,32 @@ onUnmounted(() => {
   top: 50%;
   margin-left: -70.71%;
   margin-top: -70.71%;
+}
+
+/* Carrusel horizontal para móvil */
+.carousel-container {
+  position: relative;
+}
+
+.carousel-wrapper {
+  height: 100%;
+  overflow: hidden;
+}
+
+.carousel-track {
+  height: 100%;
+  will-change: transform;
+}
+
+.carousel-slide {
+  height: 100%;
+}
+
+/* En móvil pequeño: ocultar masonry, mostrar carrusel */
+@media (max-width: 767px) {
+  .masonry-container-wrapper {
+    display: none;
+  }
 }
 
 .masonry-column-wrapper {
@@ -673,24 +837,5 @@ onUnmounted(() => {
   }
 }
 
-@media (max-width: 640px) {
-  .masonry-container {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
-    padding: 0.25rem;
-    /* En móvil, mantener la rotación pero ajustar el tamaño */
-    width: 141.42%;
-    height: 141.42%;
-    margin-left: -70.71%;
-    margin-top: -70.71%;
-  }
-  
-  .masonry-item {
-    border-radius: 0.375rem;
-  }
-  
-  .masonry-column-wrapper {
-    gap: 0.5rem;
-  }
-}
+/* Estilos adicionales para móvil ya están en el media query anterior */
 </style>
