@@ -256,9 +256,9 @@
               :style="{ width: `calc(${100 / itemsPerView}% - ${(itemsPerView - 1) * 24 / itemsPerView}px)` }"
             >
               <!-- Card refactorizado: Imagen arriba, Info abajo -->
-              <div class="card bg-base-100 shadow-xl hover:shadow-2xl border border-white/10 overflow-hidden group transition-all duration-300 hover:scale-[1.02] flex flex-col">
-                <!-- Imagen del combo - ARRIBA -->
-                <div class="relative w-full aspect-[4/5] overflow-hidden bg-base-200">
+              <div class="card bg-base-100 shadow-xl hover:shadow-2xl border border-white/10 overflow-hidden group transition-all duration-300 hover:scale-[1.02] flex flex-col max-w-sm mx-auto">
+                <!-- Imagen del combo - ARRIBA (aspect ratio más ancho para reducir altura) -->
+                <div class="relative w-full aspect-3/4 md:aspect-5/6 overflow-hidden bg-base-200">
                   <img 
                     v-if="combo.foto" 
                     :src="combo.foto" 
@@ -280,7 +280,7 @@
                 </div>
 
                 <!-- Información del combo - ABAJO -->
-                <div class="card-body p-4 md:p-5 flex flex-col gap-3 bg-linear-to-b from-base-100 to-base-200">
+                <div class="card-body p-3 md:p-4 flex flex-col gap-2.5 bg-linear-to-b from-base-100 to-base-200">
                   <!-- Detalles (Plataforma, Disponibilidad) -->
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-1.5 text-xs bg-base-300 px-2.5 py-1 rounded-lg font-semibold">
@@ -310,12 +310,12 @@
                   </div>
 
                   <!-- Nombre del combo -->
-                  <h3 class="text-lg md:text-xl font-black text-base-content line-clamp-2">
+                  <h3 class="text-base md:text-lg font-black text-base-content line-clamp-2">
                     {{ combo.nombre }}
                   </h3>
                   
                   <!-- Juegos incluidos -->
-                  <div class="bg-base-300 rounded-lg p-3">
+                  <div class="bg-base-300 rounded-lg p-2.5">
                     <h4 class="font-black text-xs mb-2 flex items-center gap-2 text-base-content">
                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -344,11 +344,11 @@
                   </div>
 
                   <!-- Precio -->
-                  <div class="bg-base-300 rounded-lg p-3">
+                  <div class="bg-base-300 rounded-lg p-2.5">
                     <div class="flex items-center justify-between">
                       <div>
                         <p class="text-xs text-base-content/60 mb-0.5">Precio del Combo</p>
-                        <p class="text-2xl md:text-3xl font-black text-error">
+                        <p class="text-xl md:text-2xl font-black text-error">
                           {{ formatearPrecio(getPrecioCombo(combo)) }}
                         </p>
                       </div>
