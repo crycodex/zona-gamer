@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import type { GameSummary, AccountType } from '@/types/game'
+import type { ComboGame } from '@/types/combo'
 import { useCartStore } from '@/stores/cart'
 import { ShoppingCart, Check } from 'lucide-vue-next'
 
 interface Props {
   game: GameSummary
   showAddToCart?: boolean
+  comboGames?: ComboGame[] // Juegos incluidos en el combo (si es un combo)
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showAddToCart: true
+  showAddToCart: true,
+  comboGames: undefined
 })
+
+const isCombo = computed(() => props.comboGames !== undefined && props.comboGames.length > 0)
 
 const cartStore = useCartStore()
 const selectedAccountType = ref<AccountType>('Principal PS4')
@@ -177,10 +182,31 @@ const getVersionDescription = (type: AccountType): string => {
         </div>
       </div>
 
-      <!-- Título del juego -->
+      <!-- Título del juego/combo -->
       <h3 class="text-base font-bold text-white leading-tight line-clamp-2 min-h-[2.5rem] flex-grow">
         {{ game.nombre }}
       </h3>
+
+      <!-- Información de juegos del combo -->
+      <div v-if="isCombo" class="bg-base-300 rounded-lg p-2.5 space-y-2">
+        <h4 class="font-bold text-xs flex items-center gap-2 text-base-content/90">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          <span>{{ props.comboGames!.length }} Juego{{ props.comboGames!.length !== 1 ? 's' : '' }} Incluido{{ props.comboGames!.length !== 1 ? 's' : '' }}</span>
+        </h4>
+        
+        <div class="space-y-1.5 max-h-[100px] overflow-y-auto custom-scrollbar-combo pr-1">
+          <div
+            v-for="(juego, index) in props.comboGames"
+            :key="index"
+            class="flex items-center gap-2 text-xs bg-base-200 px-2.5 py-1.5 rounded-md"
+          >
+            <div class="shrink-0 w-1.5 h-1.5 rounded-full bg-error"></div>
+            <span class="flex-1 line-clamp-1 font-medium text-base-content/90">{{ juego.nombre }}</span>
+          </div>
+        </div>
+      </div>
 
       <!-- Selector de tipo de cuenta - Compacto -->
       <div v-if="showAddToCart && availableAccountTypes.length > 1" class="space-y-1">
@@ -269,6 +295,35 @@ const getVersionDescription = (type: AccountType): string => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.custom-scrollbar-combo {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(239, 68, 68, 0.5) transparent;
+}
+
+.custom-scrollbar-combo::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar-combo::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar-combo::-webkit-scrollbar-thumb {
+  background: rgba(239, 68, 68, 0.5);
+  border-radius: 10px;
+}
+
+.custom-scrollbar-combo::-webkit-scrollbar-thumb:hover {
+  background: rgba(239, 68, 68, 0.7);
 }
 
 /* Animación suave para el hover */

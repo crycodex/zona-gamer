@@ -9,6 +9,8 @@ import { Filter, SlidersHorizontal, ArrowUpDown, X } from 'lucide-vue-next'
 import AppNavbar from '@/components/ui/AppNavbar.vue'
 import AppFooter from '@/components/ui/AppFooter.vue'
 import GameCard from '@/components/ui/GameCard.vue'
+import ComboCard from '@/components/ui/ComboCard.vue'
+import ComboInfoModal from '@/components/ui/ComboInfoModal.vue'
 import Pagination from '@/components/ui/Pagination.vue'
 
 const route = useRoute()
@@ -74,7 +76,17 @@ const juegosActivos = computed(() => {
 
 // Filtrar combos activos
 const combosActivos = computed(() => {
-  return combos.value.filter(combo => combo.activo !== false && (combo.totalCorreos ?? 0) > 0)
+  return combos.value.filter(combo => {
+    // Filtrar por activo (por defecto true si no está definido)
+    const estaActivo = combo.activo !== false
+    
+    // Validar que tiene los campos mínimos requeridos
+    const tieneNombre = combo.nombre && combo.nombre.trim().length > 0
+    const tienePrecio = combo.precio !== undefined || combo.costo !== undefined
+    const tieneVersion = combo.version && combo.version.trim().length > 0
+    
+    return estaActivo && tieneNombre && tienePrecio && tieneVersion
+  })
 })
 
 // Combinar juegos y combos según el tipo seleccionado
@@ -272,35 +284,23 @@ const handlePrev = () => {
   }
 }
 
-// Convertir item a GameSummary para GameCard
+// Convertir item a GameSummary para GameCard (solo para juegos)
 const itemToGame = (item: ContentItem): GameSummary => {
-  if (item.tipo === 'juego') {
-    return item as GameSummary
-  } else {
-    // Convertir combo a formato de juego
-    const combo = item as ComboSummary
-    const precioCombo = (combo.precio || combo.costo) ?? 0
-    return {
-      id: combo.id,
-      nombre: combo.nombre,
-      foto: combo.foto,
-      version: combo.version,
-      precios: {
-        ps4Principal: precioCombo,
-        ps4Secundaria: precioCombo,
-        ps5Principal: precioCombo,
-        ps5Secundaria: precioCombo
-      },
-      tipoPromocion: combo.tipoPromocion || 'ninguna',
-      isOffert: combo.isOffert || false,
-      descuento: combo.descuento || 0,
-      stockAccounts: combo.stockAccounts || 0,
-      totalCorreos: combo.totalCorreos,
-      correos: combo.correos || [],
-      costo: precioCombo,
-      activo: combo.activo !== false
-    }
-  }
+  return item as GameSummary
+}
+
+// Modal de información del combo
+const showComboInfoModal = ref(false)
+const selectedCombo = ref<ComboSummary | null>(null)
+
+const handleShowComboInfo = (combo: ComboSummary): void => {
+  selectedCombo.value = combo
+  showComboInfoModal.value = true
+}
+
+const handleCloseComboInfo = (): void => {
+  showComboInfoModal.value = false
+  selectedCombo.value = null
 }
 
 // Resetear página cuando cambian los filtros
@@ -489,15 +489,22 @@ watch([selectedTipo, selectedPlataforma, selectedOrden, precioMin, precioMax], (
             </button>
           </div>
 
-          <!-- Grid de juegos -->
+          <!-- Grid de juegos y combos -->
           <div v-else>
             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
-              <GameCard
-                v-for="item in itemsPaginados"
-                :key="item.id"
-                :game="itemToGame(item)"
-                :show-add-to-cart="true"
-              />
+              <template v-for="item in itemsPaginados" :key="item.id">
+                <GameCard
+                  v-if="item.tipo === 'juego'"
+                  :game="itemToGame(item)"
+                  :show-add-to-cart="true"
+                />
+                <ComboCard
+                  v-else-if="item.tipo === 'combo'"
+                  :combo="item as ComboSummary"
+                  :show-add-to-cart="true"
+                  @show-info="handleShowComboInfo"
+                />
+              </template>
             </div>
 
             <!-- Paginación -->
@@ -518,6 +525,13 @@ watch([selectedTipo, selectedPlataforma, selectedOrden, precioMin, precioMax], (
     <div class="relative z-50">
       <AppFooter />
     </div>
+
+    <!-- Modal de información del combo -->
+    <ComboInfoModal
+      :combo="selectedCombo"
+      :show="showComboInfoModal"
+      @close="handleCloseComboInfo"
+    />
   </div>
 </template>
 
