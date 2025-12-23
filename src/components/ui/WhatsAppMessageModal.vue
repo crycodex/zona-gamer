@@ -140,7 +140,7 @@ watch(() => props.mostrar, (nuevoValor) => {
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-4">
             <div class="avatar placeholder">
-              <div class="bg-white/20 backdrop-blur-sm text-white rounded-full w-14 h-14 border-2 border-white/30 shadow-lg">
+              <div class="bg-white/20 backdrop-blur-sm text-white rounded-full w-14 h-14 border-2 border-white/30 shadow-lg flex items-center justify-center">
                 <MessageCircle :size="28" />
               </div>
             </div>
@@ -258,22 +258,6 @@ watch(() => props.mostrar, (nuevoValor) => {
                 <div class="flex items-center gap-2 mb-2">
                   <span :class="['badge', badgeVersionClass, 'badge-lg']">{{ mensaje.version }}</span>
                   <span class="text-sm font-semibold">Plataforma</span>
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-3">
-                <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
-                  <div class="flex items-center gap-2 mb-2">
-                    <Key :size="14" class="text-warning" />
-                    <span class="font-semibold text-xs">Código 1</span>
-                  </div>
-                  <p class="font-mono text-warning font-bold text-sm">{{ mensaje.codigoVerificacion1 }}</p>
-                </div>
-                <div class="bg-base-100/50 rounded-lg p-4 border border-base-300">
-                  <div class="flex items-center gap-2 mb-2">
-                    <Key :size="14" class="text-warning" />
-                    <span class="font-semibold text-xs">Código 2</span>
-                  </div>
-                  <p class="font-mono text-warning font-bold text-sm">{{ mensaje.codigoVerificacion2 }}</p>
                 </div>
               </div>
             </div>

@@ -86,7 +86,7 @@ onMounted(async () => {
         <div class="dropdown dropdown-end">
           <div tabindex="0" role="button" class="btn btn-ghost gap-2">
             <div class="avatar placeholder">
-              <div class="bg-primary text-primary-content rounded-full w-8">
+              <div class="bg-primary text-primary-content rounded-full w-8 flex items-center justify-center">
                 <span class="text-xs">{{ currentUserData?.email?.charAt(0).toUpperCase() }}</span>
               </div>
             </div>
