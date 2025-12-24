@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ComboSummary } from '@/types/combo'
+import { useCurrency } from '@/composables/useCurrency'
 import { X, Package } from 'lucide-vue-next'
 
 interface Props {
@@ -14,18 +15,20 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const { formatPrice, getLowestPrice } = useCurrency()
+
 const formatearPrecio = (precio: number): string => {
-  return new Intl.NumberFormat('es-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(precio)
+  return formatPrice(precio)
 }
 
 const precioCombo = computed(() => {
   if (!props.combo) return 0
-  const precioBase = props.combo.precio || props.combo.costo || 0
+  
+  // Si tiene precios diferenciados, usar el más bajo según la moneda actual
+  const precioBase = props.combo.precios 
+    ? getLowestPrice(props.combo.precios)
+    : (props.combo.precio || props.combo.costo || 0)
+  
   if (props.combo.descuento && props.combo.descuento > 0) {
     return precioBase * (1 - props.combo.descuento / 100)
   }
@@ -34,7 +37,10 @@ const precioCombo = computed(() => {
 
 const precioOriginal = computed(() => {
   if (!props.combo) return 0
-  return props.combo.precio || props.combo.costo || 0
+  
+  return props.combo.precios 
+    ? getLowestPrice(props.combo.precios)
+    : (props.combo.precio || props.combo.costo || 0)
 })
 
 const handleClose = (): void => {

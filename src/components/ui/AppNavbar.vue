@@ -4,8 +4,10 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { useRoles } from '@/composables/useRoles'
 import { useCartStore } from '@/stores/cart'
-import { Search, ShoppingCart, User, Send, Gamepad2, LayoutDashboard, Menu, X, Trash2, Plus, Minus, BookOpen } from 'lucide-vue-next'
+import { useCurrency } from '@/composables/useCurrency'
+import { Search, ShoppingCart, User, Send, Gamepad2, LayoutDashboard, Menu, X, Trash2, Plus, Minus, BookOpen, Globe } from 'lucide-vue-next'
 import type { GamePlatform } from '@/types/game'
+import type { Currency } from '@/composables/useCurrency'
 import logo from '/Images/logo/logo.png'
 
 const router = useRouter()
@@ -13,6 +15,7 @@ const route = useRoute()
 const { currentUser, signOut } = useAuth()
 const { currentUserData, isAdmin, hasEmployeeAccess, loadUserData } = useRoles()
 const cartStore = useCartStore()
+const { selectedCurrency, currentCountry, currencySymbol, changeCurrency, formatPrice } = useCurrency()
 
 // Computed para determinar la ruta activa
 const isHomeActive = computed(() => route.path === '/')
@@ -212,8 +215,12 @@ const getItemPrice = (item: typeof cartStore.items[0]): number => {
 const handleQuickCheckout = (): void => {
   if (cartStore.isEmpty) return
   
+  // Obtener símbolo de moneda actual
+  const moneda = selectedCurrency.value === 'USD' ? 'USD' : 'COP'
+  const simbolo = currencySymbol.value
+  
   // Generar mensaje para WhatsApp
-  let mensaje = '¡Hola! Me gustaría realizar el siguiente pedido:%0A%0A'
+  let mensaje = `¡Hola! Me gustaría realizar el siguiente pedido (${currentCountry.value} - ${moneda}):%0A%0A`
   
   cartStore.items.forEach((item, index) => {
     const precioUnitario = getItemPrice(item)
@@ -226,18 +233,18 @@ const handleQuickCheckout = (): void => {
     const precioBase = cartStore.getItemPrice(item) / (item.descuento && item.descuento > 0 ? (1 - item.descuento / 100) : 1)
     if (item.descuento && item.descuento > 0) {
       mensaje += `   Tipo de cuenta: ${item.selectedAccountType}%0A`
-      mensaje += `   Precio original: $${precioBase.toFixed(2)}%0A`
+      mensaje += `   Precio original: ${formatPrice(precioBase)}%0A`
       mensaje += `   Descuento: ${item.descuento}%%0A`
-      mensaje += `   Precio con descuento: $${precioUnitario.toFixed(2)} c/u%0A`
+      mensaje += `   Precio con descuento: ${formatPrice(precioUnitario)} c/u%0A`
     } else {
       mensaje += `   Tipo de cuenta: ${item.selectedAccountType}%0A`
-      mensaje += `   Precio: $${precioUnitario.toFixed(2)} c/u%0A`
+      mensaje += `   Precio: ${formatPrice(precioUnitario)} c/u%0A`
     }
     
-    mensaje += `   Subtotal: $${subtotal.toFixed(2)}%0A%0A`
+    mensaje += `   Subtotal: ${formatPrice(subtotal)}%0A%0A`
   })
   
-  mensaje += `*TOTAL: $${cartStore.totalPrice.toFixed(2)}*%0A%0A`
+  mensaje += `*TOTAL: ${formatPrice(cartStore.totalPrice)}*%0A%0A`
   mensaje += 'Espero su confirmación. ¡Gracias!'
   
   // Número de WhatsApp (formato internacional sin +)
@@ -270,10 +277,13 @@ const closeMobileMenu = (): void => {
 }
 
 const formatearPrecio = (precio: number): string => {
-  return new Intl.NumberFormat('es-US', {
-    style: 'currency',
-    currency: 'USD'
-  }).format(precio)
+  return formatPrice(precio)
+}
+
+const handleCurrencyChange = (currency: Currency): void => {
+  changeCurrency(currency)
+  // Cerrar menú móvil después de cambiar moneda
+  isMobileMenuOpen.value = false
 }
 
 const incrementCartQuantity = (gameId: string, currentQuantity: number): void => {
@@ -425,7 +435,50 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
 
           <!-- Acciones (Usuario y Carrito) -->
           <div class="flex items-center gap-1 sm:gap-2 shrink-0 animate-fadeInUp delay-200">
-         
+            <!-- Selector de País/Moneda (Desktop) -->
+            <div class="hidden lg:flex dropdown dropdown-end">
+              <div 
+                tabindex="0" 
+                role="button" 
+                class="btn btn-ghost btn-circle hover:bg-primary/20 hover:shadow-glow-primary transition-all duration-300 hover:scale-110 group w-12 h-12 min-h-0"
+              >
+                <Globe :size="22" class="text-white group-hover:text-primary transition-colors" />
+              </div>
+              <ul 
+                tabindex="0" 
+                class="mt-3 z-50 p-2 shadow-xl menu menu-sm dropdown-content bg-base-100 rounded-box w-52 border border-white/10"
+              >
+                <li class="menu-title">
+                  <span class="text-xs uppercase">Seleccionar País</span>
+                </li>
+                <li>
+                  <button 
+                    @click="handleCurrencyChange('USD')"
+                    :class="['flex items-center gap-3 py-3', selectedCurrency === 'USD' ? 'active bg-error/20 text-error' : '']"
+                  >
+                    <span class="text-2xl">🇪🇨</span>
+                    <div class="flex-1">
+                      <p class="font-semibold">Ecuador</p>
+                      <p class="text-xs opacity-60">Dólar (USD)</p>
+                    </div>
+                    <span v-if="selectedCurrency === 'USD'" class="badge badge-error badge-sm">Activo</span>
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    @click="handleCurrencyChange('COP')"
+                    :class="['flex items-center gap-3 py-3', selectedCurrency === 'COP' ? 'active bg-error/20 text-error' : '']"
+                  >
+                    <span class="text-2xl">🇨🇴</span>
+                    <div class="flex-1">
+                      <p class="font-semibold">Colombia</p>
+                      <p class="text-xs opacity-60">Peso (COP)</p>
+                    </div>
+                    <span v-if="selectedCurrency === 'COP'" class="badge badge-error badge-sm">Activo</span>
+                  </button>
+                </li>
+              </ul>
+            </div>
 
             <!-- Botón Carrito con dropdown -->
             <div class="dropdown dropdown-end relative">
@@ -636,6 +689,46 @@ const platforms: { id: GamePlatform; label: string; icon: string }[] = [
                 title="Limpiar"
               >
                 <X :size="18" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Selector de País/Moneda (Móvil) -->
+          <div class="mb-4 space-y-2">
+            <div class="flex items-center gap-2 px-2">
+              <Globe :size="18" class="text-white/60" />
+              <span class="text-sm text-white/80 font-semibold">País:</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                @click="handleCurrencyChange('USD')"
+                :class="[
+                  'flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-300 border-2',
+                  selectedCurrency === 'USD'
+                    ? 'bg-error/20 border-error text-white'
+                    : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                ]"
+              >
+                <span class="text-3xl">🇪🇨</span>
+                <div class="text-center">
+                  <p class="text-sm font-semibold">Ecuador</p>
+                  <p class="text-xs opacity-60">USD</p>
+                </div>
+              </button>
+              <button
+                @click="handleCurrencyChange('COP')"
+                :class="[
+                  'flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-300 border-2',
+                  selectedCurrency === 'COP'
+                    ? 'bg-error/20 border-error text-white'
+                    : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                ]"
+              >
+                <span class="text-3xl">🇨🇴</span>
+                <div class="text-center">
+                  <p class="text-sm font-semibold">Colombia</p>
+                  <p class="text-xs opacity-60">COP</p>
+                </div>
               </button>
             </div>
           </div>

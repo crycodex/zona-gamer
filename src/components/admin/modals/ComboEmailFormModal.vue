@@ -50,7 +50,11 @@ const formData = ref<ComboEmailFormData>({
     ps4Principal: 0,
     ps4Secundaria: 0,
     ps5Principal: 0,
-    ps5Secundaria: 0
+    ps5Secundaria: 0,
+    ps4PrincipalCOP: 0,
+    ps4SecundariaCOP: 0,
+    ps5PrincipalCOP: 0,
+    ps5SecundariaCOP: 0
   },
   version: 'PS4 & PS5',
   codigoMaster: '',
@@ -248,7 +252,11 @@ const parsearArchivoTxt = (contenido: string): void => {
         ps4Principal: costo,
         ps4Secundaria: costo,
         ps5Principal: costo,
-        ps5Secundaria: costo
+        ps5Secundaria: costo,
+        ps4PrincipalCOP: 0,
+        ps4SecundariaCOP: 0,
+        ps5PrincipalCOP: 0,
+        ps5SecundariaCOP: 0
       }
     }
     

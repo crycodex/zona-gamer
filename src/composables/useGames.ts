@@ -777,7 +777,11 @@ export function useGames() {
                     ps4Principal: 0,
                     ps4Secundaria: 0,
                     ps5Principal: 0,
-                    ps5Secundaria: 0
+                    ps5Secundaria: 0,
+                    ps4PrincipalCOP: 0,
+                    ps4SecundariaCOP: 0,
+                    ps5PrincipalCOP: 0,
+                    ps5SecundariaCOP: 0
                   }
                 }
 
@@ -789,7 +793,11 @@ export function useGames() {
                     ps4Principal: 0,
                     ps4Secundaria: 0,
                     ps5Principal: 0,
-                    ps5Secundaria: 0
+                    ps5Secundaria: 0,
+                    ps4PrincipalCOP: 0,
+                    ps4SecundariaCOP: 0,
+                    ps5PrincipalCOP: 0,
+                    ps5SecundariaCOP: 0
                   },
                   costo: correoData.costo || 0,
                   version: correoData.version || plataforma,
@@ -885,7 +893,11 @@ export function useGames() {
                 ps4Principal: 0,
                 ps4Secundaria: 0,
                 ps5Principal: 0,
-                ps5Secundaria: 0
+                ps5Secundaria: 0,
+                ps4PrincipalCOP: 0,
+                ps4SecundariaCOP: 0,
+                ps5PrincipalCOP: 0,
+                ps5SecundariaCOP: 0
               }
             }
 
@@ -897,7 +909,11 @@ export function useGames() {
                 ps4Principal: 0,
                 ps4Secundaria: 0,
                 ps5Principal: 0,
-                ps5Secundaria: 0
+                ps5Secundaria: 0,
+                ps4PrincipalCOP: 0,
+                ps4SecundariaCOP: 0,
+                ps5PrincipalCOP: 0,
+                ps5SecundariaCOP: 0
               },
               costo: correoData.costo || 0,
               version: correoData.version || plataforma,

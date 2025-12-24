@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue'
 import type { GameSummary, AccountType } from '@/types/game'
 import type { ComboGame } from '@/types/combo'
 import { useCartStore } from '@/stores/cart'
+import { useCurrency } from '@/composables/useCurrency'
 import { ShoppingCart, Check } from 'lucide-vue-next'
 
 interface Props {
@@ -19,35 +20,16 @@ const props = withDefaults(defineProps<Props>(), {
 const isCombo = computed(() => props.comboGames !== undefined && props.comboGames.length > 0)
 
 const cartStore = useCartStore()
+const { formatPrice, getPrice } = useCurrency()
 const selectedAccountType = ref<AccountType>('Principal PS4')
 
 const formatearPrecio = (precio: number): string => {
-  return new Intl.NumberFormat('es-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(precio)
+  return formatPrice(precio)
 }
 
-// Obtener el precio según el tipo de cuenta seleccionado
+// Obtener el precio según el tipo de cuenta seleccionado y la moneda actual
 const precioActual = computed(() => {
-  let precio = 0
-  switch (selectedAccountType.value) {
-    case 'Principal PS4':
-      precio = props.game.precios.ps4Principal
-      break
-    case 'Secundaria PS4':
-      precio = props.game.precios.ps4Secundaria
-      break
-    case 'Principal PS5':
-      precio = props.game.precios.ps5Principal
-      break
-    case 'Secundaria PS5':
-      precio = props.game.precios.ps5Secundaria
-      break
-  }
-  return precio
+  return getPrice(props.game.precios, selectedAccountType.value)
 })
 
 const precioConDescuento = computed(() => {

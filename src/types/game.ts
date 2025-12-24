@@ -15,10 +15,16 @@ export interface AccountOwner {
 
 // Estructura de precios para cada tipo de cuenta
 export interface GamePrices {
+  // Precios en USD (Ecuador)
   ps4Principal: number
   ps4Secundaria: number
   ps5Principal: number
   ps5Secundaria: number
+  // Precios en COP (Colombia)
+  ps4PrincipalCOP: number
+  ps4SecundariaCOP: number
+  ps5PrincipalCOP: number
+  ps5SecundariaCOP: number
 }
 
 // Cada correo dentro de un juego tiene toda esta información

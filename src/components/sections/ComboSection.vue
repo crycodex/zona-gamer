@@ -3,6 +3,7 @@
   import { useRouter } from 'vue-router'
   import { useCombos } from '@/composables/useCombos'
   import { useCartStore } from '@/stores/cart'
+  import { useCurrency } from '@/composables/useCurrency'
   import type { ComboSummary } from '@/types/combo'
   import type { GameSummary } from '@/types/game'
   import { Package, ChevronLeft, ChevronRight, ArrowRight, Sparkles } from 'lucide-vue-next'
@@ -10,6 +11,7 @@
   const { combos, isLoadingCombos } = useCombos()
   const cartStore = useCartStore()
   const router = useRouter()
+  const { formatPrice, getLowestPrice } = useCurrency()
   const currentIndex = ref(0)
   const maxItems = 5
   
@@ -82,29 +84,39 @@
   }
   
   const formatearPrecio = (precio: number): string => {
-    return new Intl.NumberFormat('es-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(precio)
+    return formatPrice(precio)
+  }
+  
+  // Obtener el precio del combo según la moneda actual
+  const getPrecioComboActual = (combo: ComboSummary): number => {
+    // Si el combo tiene precios diferenciados, usar el más bajo según la moneda actual
+    if (combo.precios) {
+      return getLowestPrice(combo.precios)
+    }
+    // Fallback al precio único (legacy)
+    return getPrecioCombo(combo)
   }
   
   // Agregar combo al carrito (tratándolo como un juego)
   const agregarComboAlCarrito = (combo: ComboSummary): void => {
-    const precioCombo = getPrecioCombo(combo)
+    const precioCombo = getPrecioComboActual(combo)
     
     // Convertir el combo a formato GameSummary para el carrito
-    // Para combos, todos los precios son iguales (precio único)
     const comboAsGame: GameSummary = {
       id: combo.id,
       nombre: combo.nombre,
       foto: combo.foto,
       version: combo.version,
-      // Para combos, todos los precios son iguales al precio único
-      precios: {
+      // Usar los precios del combo si existen, sino usar el precio único para todos
+      precios: combo.precios || {
         ps4Principal: precioCombo,
         ps4Secundaria: precioCombo,
         ps5Principal: precioCombo,
-        ps5Secundaria: precioCombo
+        ps5Secundaria: precioCombo,
+        ps4PrincipalCOP: 0,
+        ps4SecundariaCOP: 0,
+        ps5PrincipalCOP: 0,
+        ps5SecundariaCOP: 0
       },
       tipoPromocion: combo.tipoPromocion || 'ninguna',
       isOffert: combo.isOffert || false,
@@ -349,7 +361,7 @@
                       <div>
                         <p class="text-xs text-base-content/60 mb-0.5">Precio del Combo</p>
                         <p class="text-xl md:text-2xl font-black text-error">
-                          {{ formatearPrecio(getPrecioCombo(combo)) }}
+                          {{ formatearPrecio(getPrecioComboActual(combo)) }}
                         </p>
                       </div>
                       <div v-if="calcularDescuento(combo) > 0" class="badge badge-success gap-1.5 py-3 px-3 text-sm shadow-lg">

@@ -580,13 +580,14 @@ const handleSaveCombo = async (data: ComboFormData): Promise<void> => {
         tipoPromocion: data.tipoPromocion,
         precio: data.precio,
         juegos: data.juegos,
-        juegoReferenciado: data.juegoReferenciado
+        juegoReferenciado: data.juegoReferenciado,
+        precios: data.precios
       })
       successMessage.value = 'Combo actualizado exitosamente'
     } else {
       // Crear nuevo combo
       const isOffert = data.tipoPromocion === 'oferta'
-      await crearCombo('PS4 & PS5', data.nombre, data.foto, isOffert, data.version, data.precio, data.juegos, data.juegoReferenciado)
+      await crearCombo('PS4 & PS5', data.nombre, data.foto, isOffert, data.version, data.precio, data.juegos, data.juegoReferenciado, data.precios)
       successMessage.value = 'Combo creado exitosamente'
     }
     

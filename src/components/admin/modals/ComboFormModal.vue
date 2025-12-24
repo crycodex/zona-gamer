@@ -9,6 +9,7 @@ import { Plus, Trash2 } from 'lucide-vue-next'
 export interface ComboFormData {
   nombre: string
   precio: number
+  precios: import('@/types/game').GamePrices
   version: ComboPlatform
   foto?: string
   tipoPromocion: PromocionType
@@ -41,6 +42,16 @@ const { games, cargarJuegos } = useGames()
 const formData = ref<ComboFormData>({
   nombre: '',
   precio: 0,
+  precios: {
+    ps4Principal: 0,
+    ps4Secundaria: 0,
+    ps5Principal: 0,
+    ps5Secundaria: 0,
+    ps4PrincipalCOP: 0,
+    ps4SecundariaCOP: 0,
+    ps5PrincipalCOP: 0,
+    ps5SecundariaCOP: 0
+  },
   version: 'PS4 & PS5',
   foto: '',
   tipoPromocion: 'ninguna',
@@ -72,6 +83,16 @@ watch(() => props.show, async (newVal) => {
       formData.value = {
         nombre: props.combo.nombre,
         precio: props.combo.precio || props.combo.costo || 0,
+        precios: props.combo.precios || {
+          ps4Principal: props.combo.precio || props.combo.costo || 0,
+          ps4Secundaria: props.combo.precio || props.combo.costo || 0,
+          ps5Principal: props.combo.precio || props.combo.costo || 0,
+          ps5Secundaria: props.combo.precio || props.combo.costo || 0,
+          ps4PrincipalCOP: 0,
+          ps4SecundariaCOP: 0,
+          ps5PrincipalCOP: 0,
+          ps5SecundariaCOP: 0
+        },
         version: props.combo.version,
         foto: props.combo.foto || '',
         tipoPromocion: props.combo.tipoPromocion || 'ninguna',
@@ -83,6 +104,16 @@ watch(() => props.show, async (newVal) => {
       formData.value = {
         nombre: '',
         precio: 0,
+        precios: {
+          ps4Principal: 0,
+          ps4Secundaria: 0,
+          ps5Principal: 0,
+          ps5Secundaria: 0,
+          ps4PrincipalCOP: 0,
+          ps4SecundariaCOP: 0,
+          ps5PrincipalCOP: 0,
+          ps5SecundariaCOP: 0
+        },
         version: 'PS4 & PS5',
         foto: '',
         tipoPromocion: 'ninguna',
@@ -319,7 +350,7 @@ onMounted(async () => {
               </select>
             </div>
 
-            <!-- Precio Global -->
+            <!-- Precio Global (Legacy) -->
             <div class="form-control">
               <label class="label">
                 <span class="label-text font-semibold flex items-center gap-2">
@@ -339,8 +370,208 @@ onMounted(async () => {
                 />
               </div>
               <label class="label">
-                <span class="label-text-alt text-info">Precio único para todas las cuentas</span>
+                <span class="label-text-alt text-info">Precio base de referencia</span>
               </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Precios por tipo de cuenta (USD) -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h4 class="font-bold text-lg text-base-content">Precios por Tipo de Cuenta (USD)</h4>
+          </div>
+          
+          <div class="card bg-base-200 border border-base-300 shadow-lg">
+            <div class="card-body p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- PS4 Principal -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-primary badge-lg px-3 py-1">PS4</span>
+                      <span>Principal</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps4Principal"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      class="input input-bordered w-full pl-8 focus:input-primary"
+                    />
+                  </div>
+                </div>
+
+                <!-- PS4 Secundaria -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-primary badge-lg px-3 py-1">PS4</span>
+                      <span>Secundaria</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps4Secundaria"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      class="input input-bordered w-full pl-8 focus:input-primary"
+                    />
+                  </div>
+                </div>
+
+                <!-- PS5 Principal -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-success badge-lg px-3 py-1">PS5</span>
+                      <span>Principal</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps5Principal"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      class="input input-bordered w-full pl-8 focus:input-primary"
+                    />
+                  </div>
+                </div>
+
+                <!-- PS5 Secundaria -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-success badge-lg px-3 py-1">PS5</span>
+                      <span>Secundaria</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps5Secundaria"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      class="input input-bordered w-full pl-8 focus:input-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Precios en COP (Colombia) -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h4 class="font-bold text-lg text-base-content">Precios en Pesos Colombianos (COP)</h4>
+          </div>
+          
+          <div class="card bg-success/5 border border-success/30 shadow-lg">
+            <div class="card-body p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- PS4 Principal COP -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-primary badge-lg px-3 py-1">PS4</span>
+                      <span>Principal</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps4PrincipalCOP"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      class="input input-bordered w-full pl-8 focus:input-success"
+                    />
+                  </div>
+                </div>
+
+                <!-- PS4 Secundaria COP -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-primary badge-lg px-3 py-1">PS4</span>
+                      <span>Secundaria</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps4SecundariaCOP"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      class="input input-bordered w-full pl-8 focus:input-success"
+                    />
+                  </div>
+                </div>
+
+                <!-- PS5 Principal COP -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-success badge-lg px-3 py-1">PS5</span>
+                      <span>Principal</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps5PrincipalCOP"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      class="input input-bordered w-full pl-8 focus:input-success"
+                    />
+                  </div>
+                </div>
+
+                <!-- PS5 Secundaria COP -->
+                <div class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-success badge-lg px-3 py-1">PS5</span>
+                      <span>Secundaria</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps5SecundariaCOP"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      class="input input-bordered w-full pl-8 focus:input-success"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

@@ -17,7 +17,11 @@ games/
                 │   │   ps4Principal: 6,
                 │   │   ps4Secundaria: 4,
                 │   │   ps5Principal: 8,
-                │   │   ps5Secundaria: 5
+                │   │   ps5Secundaria: 5,
+                │   │   ps4PrincipalCOP: 25000,
+                │   │   ps4SecundariaCOP: 16000,
+                │   │   ps5PrincipalCOP: 33000,
+                │   │   ps5SecundariaCOP: 20000
                 │   │ }
                 │   ├── version: "PS4"
                 │   ├── codigoMaster: "BSR6BUDLUZJUVUORBS4CIF45IULQVFHR6CDM3DXYAPQIW5XKDEFOB7N5RQNYZIPMFZ4XHKVVPUNW76IK5VFJHA4EBWI7VIGHVFE37ZI"
@@ -66,7 +70,11 @@ games/
                     │   ps4Principal: 6,
                     │   ps4Secundaria: 4,
                     │   ps5Principal: 8,
-                    │   ps5Secundaria: 5
+                    │   ps5Secundaria: 5,
+                    │   ps4PrincipalCOP: 25000,
+                    │   ps4SecundariaCOP: 16000,
+                    │   ps5PrincipalCOP: 33000,
+                    │   ps5SecundariaCOP: 20000
                     │ }
                     ├── version: "PS4"
                     ├── codigoMaster: "..."
@@ -92,7 +100,11 @@ combos/
                 │   │   ps4Principal: 15,
                 │   │   ps4Secundaria: 12,
                 │   │   ps5Principal: 18,
-                │   │   ps5Secundaria: 14
+                │   │   ps5Secundaria: 14,
+                │   │   ps4PrincipalCOP: 62000,
+                │   │   ps4SecundariaCOP: 49000,
+                │   │   ps5PrincipalCOP: 74000,
+                │   │   ps5SecundariaCOP: 58000
                 │   │ }
                 │   ├── version: "PS4"
                 │   ├── codigoMaster: "MASTER USA"
@@ -160,11 +172,15 @@ Este documento puede estar vacío o contener metadata general.
 {
   correo: string (ID del documento)     // theg.am.e.rsz.o.nec@gmail.com
   nombre: string                        // "A WAY OUT"
-  precios: {                            // Objeto con los 4 precios
-    ps4Principal: number                // Precio para cuenta Principal PS4
-    ps4Secundaria: number               // Precio para cuenta Secundaria PS4
-    ps5Principal: number                // Precio para cuenta Principal PS5
-    ps5Secundaria: number               // Precio para cuenta Secundaria PS5
+  precios: {                            // Objeto con los 8 precios (USD y COP)
+    ps4Principal: number                // Precio USD para cuenta Principal PS4
+    ps4Secundaria: number               // Precio USD para cuenta Secundaria PS4
+    ps5Principal: number                // Precio USD para cuenta Principal PS5
+    ps5Secundaria: number               // Precio USD para cuenta Secundaria PS5
+    ps4PrincipalCOP: number             // Precio COP para cuenta Principal PS4
+    ps4SecundariaCOP: number            // Precio COP para cuenta Secundaria PS4
+    ps5PrincipalCOP: number             // Precio COP para cuenta Principal PS5
+    ps5SecundariaCOP: number            // Precio COP para cuenta Secundaria PS5
   }
   version: string                       // "PS4 & PS5"
   codigoMaster: string                  // Código maestro principal
@@ -199,7 +215,11 @@ games/PS4 & PS5/juegos/a_way_out/correos/theg.am.e.rsz.o.nec@gmail.com
     "ps4Principal": 6,
     "ps4Secundaria": 4,
     "ps5Principal": 8,
-    "ps5Secundaria": 5
+    "ps5Secundaria": 5,
+    "ps4PrincipalCOP": 25000,
+    "ps4SecundariaCOP": 16000,
+    "ps5PrincipalCOP": 33000,
+    "ps5SecundariaCOP": 20000
   },
   "version": "PS4",
   "codigoMaster": "BSR6BUDLUZJUVUORBS4CIF45IULQVFHR6CDM3DXYAPQIW5XKDEFOB7N5RQNYZIPMFZ4XHKVVPUNW76IK5VFJHA4EBWI7VIGHVFE37ZI",
@@ -345,11 +365,16 @@ Cada cuenta tiene:
 1. Estando en la vista de correos, click "+ Agregar Correo"
 2. Llenar el formulario:
    - **Correo** (obligatorio): `theg.am.e.rsz.o.nec@gmail.com`
-   - **Precios** (obligatorios):
+   - **Precios en USD** (obligatorios):
      - PS4 Principal: `6`
      - PS4 Secundaria: `4`
      - PS5 Principal: `8`
      - PS5 Secundaria: `5`
+   - **Precios en COP** (obligatorios):
+     - PS4 Principal COP: `25000`
+     - PS4 Secundaria COP: `16000`
+     - PS5 Principal COP: `33000`
+     - PS5 Secundaria COP: `20000`
    - **Código**: `90006`
    - **Código Master** (obligatorio): El código largo
    - **Códigos Generados**: Uno por línea
@@ -389,16 +414,23 @@ Cada cuenta tiene:
 1. Click en botón "Eliminar" en la vista de juegos
 2. Confirmar eliminación (eliminará TODOS los correos del juego)
 
-## 💰 Sistema de Precios
+## 💰 Sistema de Precios Multi-Moneda
 
-Cada juego ahora tiene **4 precios diferentes** según el tipo de cuenta:
+Cada juego ahora tiene **8 precios diferentes** según el tipo de cuenta y la moneda:
 
+### Precios en USD (Ecuador)
 - **PS4 Principal**: Precio para cuentas principales de PS4
 - **PS4 Secundaria**: Precio para cuentas secundarias de PS4
 - **PS5 Principal**: Precio para cuentas principales de PS5
 - **PS5 Secundaria**: Precio para cuentas secundarias de PS5
 
-Estos precios se configuran al crear o editar un juego y se reflejan en el home, donde el usuario puede seleccionar el tipo de cuenta que desea comprar.
+### Precios en COP (Colombia)
+- **PS4 Principal COP**: Precio en pesos colombianos para cuentas principales de PS4
+- **PS4 Secundaria COP**: Precio en pesos colombianos para cuentas secundarias de PS4
+- **PS5 Principal COP**: Precio en pesos colombianos para cuentas principales de PS5
+- **PS5 Secundaria COP**: Precio en pesos colombianos para cuentas secundarias de PS5
+
+Estos precios se configuran al crear o editar un juego. En el home y navbar, el usuario puede seleccionar el país/moneda (Ecuador USD o Colombia COP) para ver los precios correspondientes. Por defecto se muestra USD (Ecuador).
 
 ## 💡 Formato de Datos de Entrada
 
@@ -476,7 +508,7 @@ El parser automáticamente extrae toda esta información y llena el formulario.
 
 6. **Los códigos incluyen el master**: En la interfaz se muestra "X códigos" que incluye el master + los generados.
 
-7. **Sistema de precios múltiples**: Cada juego tiene 4 precios diferentes (PS4 Principal, PS4 Secundaria, PS5 Principal, PS5 Secundaria) que se configuran al crear el juego y se muestran en el home para que el usuario seleccione el tipo de cuenta que desea comprar.
+7. **Sistema de precios multi-moneda**: Cada juego tiene 8 precios diferentes (4 en USD para Ecuador y 4 en COP para Colombia). Los precios se configuran por tipo de cuenta (PS4 Principal, PS4 Secundaria, PS5 Principal, PS5 Secundaria) y se muestran en el home según la moneda seleccionada por el usuario en el navbar. Por defecto se muestran los precios en USD.
 
 ## 🔍 Búsqueda
 

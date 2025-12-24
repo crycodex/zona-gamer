@@ -574,7 +574,8 @@ export function useCombos() {
     version?: ComboPlatform,
     precio?: number,
     juegos?: import('@/types/combo').ComboGame[],
-    juegoReferenciado?: string
+    juegoReferenciado?: string,
+    precios?: import('@/types/game').GamePrices
   ): Promise<string> => {
     try {
       // Limpiar cache al crear un combo
@@ -602,6 +603,7 @@ export function useCombos() {
       if (foto && foto.trim()) comboData.foto = foto.trim()
       if (isOffert !== undefined) comboData.isOffert = isOffert
       if (juegoReferenciado) comboData.juegoReferenciado = juegoReferenciado
+      if (precios) comboData.precios = precios
       
       // Legacy: mantener costo para compatibilidad
       comboData.costo = precio || 0
@@ -627,6 +629,7 @@ export function useCombos() {
       precio?: number
       juegos?: import('@/types/combo').ComboGame[]
       juegoReferenciado?: string
+      precios?: import('@/types/game').GamePrices
     }
   ): Promise<void> => {
     try {
@@ -650,6 +653,7 @@ export function useCombos() {
       }
       if (datos.juegos !== undefined) updateData.juegos = datos.juegos
       if (datos.juegoReferenciado !== undefined) updateData.juegoReferenciado = datos.juegoReferenciado
+      if (datos.precios !== undefined) updateData.precios = datos.precios
       
       await setDoc(comboRef, updateData, { merge: true })
       // Limpiar cache al actualizar
@@ -762,7 +766,11 @@ export function useCombos() {
                     ps4Principal: precio,
                     ps4Secundaria: precio,
                     ps5Principal: precio,
-                    ps5Secundaria: precio
+                    ps5Secundaria: precio,
+                    ps4PrincipalCOP: 0,
+                    ps4SecundariaCOP: 0,
+                    ps5PrincipalCOP: 0,
+                    ps5SecundariaCOP: 0
                   },
                   juegos: comboDocData.juegos || [],
                   juegoReferenciado: comboDocData.juegoReferenciado
@@ -776,7 +784,11 @@ export function useCombos() {
                     ps4Principal: precio,
                     ps4Secundaria: precio,
                     ps5Principal: precio,
-                    ps5Secundaria: precio
+                    ps5Secundaria: precio,
+                    ps4PrincipalCOP: 0,
+                    ps4SecundariaCOP: 0,
+                    ps5PrincipalCOP: 0,
+                    ps5SecundariaCOP: 0
                   },
                   costo: precio, // Legacy
                   version: correoData.version || plataforma,
@@ -874,7 +886,11 @@ export function useCombos() {
                 ps4Principal: precio,
                 ps4Secundaria: precio,
                 ps5Principal: precio,
-                ps5Secundaria: precio
+                ps5Secundaria: precio,
+                ps4PrincipalCOP: 0,
+                ps4SecundariaCOP: 0,
+                ps5PrincipalCOP: 0,
+                ps5SecundariaCOP: 0
               },
               juegos: comboDocData.juegos || [],
               juegoReferenciado: comboDocData.juegoReferenciado
@@ -888,7 +904,11 @@ export function useCombos() {
                 ps4Principal: precio,
                 ps4Secundaria: precio,
                 ps5Principal: precio,
-                ps5Secundaria: precio
+                ps5Secundaria: precio,
+                ps4PrincipalCOP: 0,
+                ps4SecundariaCOP: 0,
+                ps5PrincipalCOP: 0,
+                ps5SecundariaCOP: 0
               },
               costo: precio, // Legacy
               version: correoData.version || plataforma,

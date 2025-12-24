@@ -46,7 +46,11 @@ const formData = ref<EmailFormData>({
     ps4Principal: 0,
     ps4Secundaria: 0,
     ps5Principal: 0,
-    ps5Secundaria: 0
+    ps5Secundaria: 0,
+    ps4PrincipalCOP: 0,
+    ps4SecundariaCOP: 0,
+    ps5PrincipalCOP: 0,
+    ps5SecundariaCOP: 0
   },
   version: 'PS4 & PS5',
   codigoMaster: '',
@@ -79,11 +83,15 @@ watch(() => props.show, (newVal) => {
       formData.value = {
         correo: props.email.correo,
         nombre: props.email.nombre,
-        precios: props.email.precios || {
-          ps4Principal: props.email.costo || 0,
-          ps4Secundaria: props.email.costo || 0,
-          ps5Principal: props.email.costo || 0,
-          ps5Secundaria: props.email.costo || 0
+        precios: {
+          ps4Principal: props.email.precios?.ps4Principal || props.email.costo || 0,
+          ps4Secundaria: props.email.precios?.ps4Secundaria || props.email.costo || 0,
+          ps5Principal: props.email.precios?.ps5Principal || props.email.costo || 0,
+          ps5Secundaria: props.email.precios?.ps5Secundaria || props.email.costo || 0,
+          ps4PrincipalCOP: props.email.precios?.ps4PrincipalCOP || 0,
+          ps4SecundariaCOP: props.email.precios?.ps4SecundariaCOP || 0,
+          ps5PrincipalCOP: props.email.precios?.ps5PrincipalCOP || 0,
+          ps5SecundariaCOP: props.email.precios?.ps5SecundariaCOP || 0
         },
         costo: props.email.costo, // Legacy
         version: props.email.version,

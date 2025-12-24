@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import type { ComboSummary } from '@/types/combo'
 import { useCartStore } from '@/stores/cart'
+import { useCurrency } from '@/composables/useCurrency'
 import { ShoppingCart, Check, Info, Package } from 'lucide-vue-next'
 import type { GameSummary } from '@/types/game'
 
@@ -19,18 +20,19 @@ const emit = defineEmits<{
 }>()
 
 const cartStore = useCartStore()
+const { formatPrice, getLowestPrice } = useCurrency()
 
 const formatearPrecio = (precio: number): string => {
-  return new Intl.NumberFormat('es-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(precio)
+  return formatPrice(precio)
 }
 
+// Obtener el precio más bajo del combo según la moneda actual
 const precioCombo = computed(() => {
-  const precioBase = props.combo.precio || props.combo.costo || 0
+  // Si el combo tiene precios diferenciados, usar el más bajo
+  const precioBase = props.combo.precios 
+    ? getLowestPrice(props.combo.precios)
+    : (props.combo.precio || props.combo.costo || 0)
+  
   if (props.combo.descuento && props.combo.descuento > 0) {
     return precioBase * (1 - props.combo.descuento / 100)
   }
@@ -38,7 +40,9 @@ const precioCombo = computed(() => {
 })
 
 const precioOriginal = computed(() => {
-  return props.combo.precio || props.combo.costo || 0
+  return props.combo.precios 
+    ? getLowestPrice(props.combo.precios)
+    : (props.combo.precio || props.combo.costo || 0)
 })
 
 const isInCart = computed(() => cartStore.isInCart(props.combo.id))
@@ -51,11 +55,15 @@ const handleAddToCart = (): void => {
     nombre: props.combo.nombre,
     foto: props.combo.foto,
     version: props.combo.version,
-    precios: {
+    precios: props.combo.precios || {
       ps4Principal: precioOriginal.value,
       ps4Secundaria: precioOriginal.value,
       ps5Principal: precioOriginal.value,
-      ps5Secundaria: precioOriginal.value
+      ps5Secundaria: precioOriginal.value,
+      ps4PrincipalCOP: 0,
+      ps4SecundariaCOP: 0,
+      ps5PrincipalCOP: 0,
+      ps5SecundariaCOP: 0
     },
     tipoPromocion: props.combo.tipoPromocion || 'ninguna',
     isOffert: props.combo.isOffert || false,

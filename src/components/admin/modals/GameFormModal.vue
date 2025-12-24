@@ -41,7 +41,11 @@ const formData = ref<GameFormData>({
     ps4Principal: 0,
     ps4Secundaria: 0,
     ps5Principal: 0,
-    ps5Secundaria: 0
+    ps5Secundaria: 0,
+    ps4PrincipalCOP: 0,
+    ps4SecundariaCOP: 0,
+    ps5PrincipalCOP: 0,
+    ps5SecundariaCOP: 0
   },
   version: 'PS4 & PS5',
   foto: '',
@@ -68,7 +72,11 @@ watch(() => props.show, (newVal) => {
           ps4Principal: props.game.costo || 0,
           ps4Secundaria: props.game.costo || 0,
           ps5Principal: props.game.costo || 0,
-          ps5Secundaria: props.game.costo || 0
+          ps5Secundaria: props.game.costo || 0,
+          ps4PrincipalCOP: 0,
+          ps4SecundariaCOP: 0,
+          ps5PrincipalCOP: 0,
+          ps5SecundariaCOP: 0
         },
         version: props.game.version,
         foto: props.game.foto || '',
@@ -86,7 +94,11 @@ watch(() => props.show, (newVal) => {
           ps4Principal: 0,
           ps4Secundaria: 0,
           ps5Principal: 0,
-          ps5Secundaria: 0
+          ps5Secundaria: 0,
+          ps4PrincipalCOP: 0,
+          ps4SecundariaCOP: 0,
+          ps5PrincipalCOP: 0,
+          ps5SecundariaCOP: 0
         },
         version: 'PS4 & PS5',
         foto: '',
@@ -107,10 +119,14 @@ watch(() => formData.value.version, (newVersion) => {
       // Resetear precios PS5
       formData.value.precios.ps5Principal = 0
       formData.value.precios.ps5Secundaria = 0
+      formData.value.precios.ps5PrincipalCOP = 0
+      formData.value.precios.ps5SecundariaCOP = 0
     } else if (newVersion === 'PS5') {
       // Resetear precios PS4
       formData.value.precios.ps4Principal = 0
       formData.value.precios.ps4Secundaria = 0
+      formData.value.precios.ps4PrincipalCOP = 0
+      formData.value.precios.ps4SecundariaCOP = 0
     }
   }
 })
@@ -135,19 +151,21 @@ const handleSubmit = () => {
   let preciosInvalidos = false
   
   if (mostrarPreciosPS4.value) {
-    if (precios.ps4Principal <= 0 || precios.ps4Secundaria <= 0) {
+    if (precios.ps4Principal <= 0 || precios.ps4Secundaria <= 0 || 
+        precios.ps4PrincipalCOP <= 0 || precios.ps4SecundariaCOP <= 0) {
       preciosInvalidos = true
     }
   }
   
   if (mostrarPreciosPS5.value) {
-    if (precios.ps5Principal <= 0 || precios.ps5Secundaria <= 0) {
+    if (precios.ps5Principal <= 0 || precios.ps5Secundaria <= 0 ||
+        precios.ps5PrincipalCOP <= 0 || precios.ps5SecundariaCOP <= 0) {
       preciosInvalidos = true
     }
   }
   
   if (preciosInvalidos) {
-    alert('Todos los precios de la plataforma seleccionada deben ser mayores a 0')
+    alert('Todos los precios (USD y COP) de la plataforma seleccionada deben ser mayores a 0')
     return
   }
 
@@ -427,7 +445,119 @@ const copyUrlToClipboard = async () => {
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  Los precios de la plataforma seleccionada son obligatorios y deben ser mayores a 0
+                  Los precios en USD de la plataforma seleccionada son obligatorios
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Precios en COP (Colombia) -->
+        <div class="space-y-4">
+          <div class="flex items-center gap-2 mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h4 class="font-bold text-lg text-base-content">Precios en Pesos Colombianos (COP) *</h4>
+          </div>
+          
+          <div class="card bg-success/5 border border-success/30 shadow-lg">
+            <div class="card-body p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- PS4 Principal COP -->
+                <div v-if="mostrarPreciosPS4" class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-primary badge-lg px-3 py-1">PS4</span>
+                      <span>Principal</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps4PrincipalCOP"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      class="input input-bordered w-full pl-8 focus:input-success"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <!-- PS4 Secundaria COP -->
+                <div v-if="mostrarPreciosPS4" class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-primary badge-lg px-3 py-1">PS4</span>
+                      <span>Secundaria</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps4SecundariaCOP"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      class="input input-bordered w-full pl-8 focus:input-success"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <!-- PS5 Principal COP -->
+                <div v-if="mostrarPreciosPS5" class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-success badge-lg px-3 py-1">PS5</span>
+                      <span>Principal</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps5PrincipalCOP"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      class="input input-bordered w-full pl-8 focus:input-success"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <!-- PS5 Secundaria COP -->
+                <div v-if="mostrarPreciosPS5" class="form-control">
+                  <label class="label">
+                    <span class="label-text font-semibold flex items-center gap-2">
+                      <span class="badge badge-success badge-lg px-3 py-1">PS5</span>
+                      <span>Secundaria</span>
+                    </span>
+                  </label>
+                  <div class="relative">
+                    <span class="absolute left-4 top-1/2 transform -translate-y-1/2 text-base-content/60">$</span>
+                    <input
+                      v-model.number="formData.precios.ps5SecundariaCOP"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      class="input input-bordered w-full pl-8 focus:input-success"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              <label class="label mt-4">
+                <span class="label-text-alt text-success flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Los precios en COP de la plataforma seleccionada son obligatorios
                 </span>
               </label>
             </div>
